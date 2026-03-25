@@ -108,7 +108,9 @@ export function DepositActionsForm(
   // editable state
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [provider, setProvider] = useState<(typeof PROVIDER_OPTIONS)[number] | string>("Stripe");
+  const [provider, setProvider] = useState<
+    (typeof PROVIDER_OPTIONS)[number] | string
+  >("Stripe");
   const [status, setStatus] = useState<DepositStatus>("pending");
 
   const [gameId, setGameId] = useState("");

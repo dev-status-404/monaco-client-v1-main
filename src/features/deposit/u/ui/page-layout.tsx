@@ -746,7 +746,11 @@ export default function DepositLayout() {
                   className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-slate-900 outline-none dark:border-white/10 dark:bg-white/5 dark:text-white disabled:opacity-60"
                 >
                   {PROVIDER_OPTIONS.map((option) => (
-                    <option key={option} value={option} className="bg-white dark:bg-slate-900">
+                    <option
+                      key={option}
+                      value={option}
+                      className="bg-white dark:bg-slate-900"
+                    >
                       {option}
                     </option>
                   ))}

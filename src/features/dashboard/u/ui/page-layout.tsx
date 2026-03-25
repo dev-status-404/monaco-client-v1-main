@@ -99,7 +99,10 @@ const formatDate = (value?: string) => {
   return date.toLocaleString();
 };
 
-const normalizeStatus = (value?: string) => String(value ?? "").trim().toLowerCase();
+const normalizeStatus = (value?: string) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase();
 
 const statusVariant = (value?: string) => {
   const status = normalizeStatus(value);
@@ -122,7 +125,10 @@ const statusVariant = (value?: string) => {
 const directionVariant = (value?: string) =>
   String(value ?? "").toLowerCase() === "credit" ? "success" : "primary";
 
-const matchesDateFilter = (createdAt: string | undefined, filter: DateFilter) => {
+const matchesDateFilter = (
+  createdAt: string | undefined,
+  filter: DateFilter,
+) => {
   if (filter === "all") return true;
   if (!createdAt) return false;
 
@@ -162,14 +168,18 @@ const matchesSearch = (row: TxRow, search: string) => {
     .includes(query);
 };
 
-const filterRows = (rows: TxRow[], applied: {
-  date: DateFilter;
-  status: StatusFilter;
-  search: string;
-}) => {
+const filterRows = (
+  rows: TxRow[],
+  applied: {
+    date: DateFilter;
+    status: StatusFilter;
+    search: string;
+  },
+) => {
   return rows.filter((row) => {
     const hasStatusMatch =
-      applied.status === "all" || normalizeStatus(row.status) === applied.status;
+      applied.status === "all" ||
+      normalizeStatus(row.status) === applied.status;
 
     return (
       hasStatusMatch &&
@@ -303,7 +313,10 @@ export default function Dashboard() {
         <SectionTitle title="Dashboard" />
 
         <div className="flex items-center gap-2">
-          <Button className="rounded-2xl" onClick={() => setIsReferralOpen(true)}>
+          <Button
+            className="rounded-2xl"
+            onClick={() => setIsReferralOpen(true)}
+          >
             <Gift className="mr-2 size-4" />
             Refer a Friend
           </Button>
@@ -311,10 +324,14 @@ export default function Dashboard() {
           <Button
             variant="secondary"
             className="rounded-2xl"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ["dashboard"] })}
+            onClick={() =>
+              queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+            }
             title="Refresh"
           >
-            <RefreshCw className={`mr-2 size-4 ${isFetching ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`mr-2 size-4 ${isFetching ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
@@ -328,28 +345,40 @@ export default function Dashboard() {
               Refer a Friend
             </DialogTitle>
             <DialogDescription className="text-slate-600 dark:text-white/60">
-              Share this demo signup URL with a friend. It points to the signup page with a sample referral code.
+              Share this demo signup URL with a friend. It points to the signup
+              page with a sample referral code.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
             <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
               <div className="mb-2 flex items-center justify-between gap-3">
-                <Label className="text-slate-700 dark:text-white/80">Demo referral URL</Label>
+                <Label className="text-slate-700 dark:text-white/80">
+                  Demo referral URL
+                </Label>
                 <Badge variant="secondary" className="rounded-xl">
                   {referralCode}
                 </Badge>
               </div>
 
-              <Input value={referralUrl} readOnly className="font-mono text-xs sm:text-sm" />
+              <Input
+                value={referralUrl}
+                readOnly
+                className="font-mono text-xs sm:text-sm"
+              />
 
               <p className="mt-2 text-xs text-slate-500 dark:text-white/50">
-                Friends can use this link to open signup with the demo referral attached.
+                Friends can use this link to open signup with the demo referral
+                attached.
               </p>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button variant="secondary" className="rounded-2xl" onClick={copyReferralUrl}>
+              <Button
+                variant="secondary"
+                className="rounded-2xl"
+                onClick={copyReferralUrl}
+              >
                 <Copy className="mr-2 size-4" />
                 Copy Link
               </Button>
@@ -372,7 +401,9 @@ export default function Dashboard() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:flex-1">
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Status</Label>
+              <Label className="text-slate-700 dark:text-white/80">
+                Status
+              </Label>
               <div className="relative">
                 <Filter className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500 dark:text-white/40" />
                 <select
@@ -441,7 +472,11 @@ export default function Dashboard() {
                 >
                   <option value="">All games</option>
                   {games.map((g) => (
-                    <option key={g.id} value={g.id} className="bg-white dark:bg-slate-900">
+                    <option
+                      key={g.id}
+                      value={g.id}
+                      className="bg-white dark:bg-slate-900"
+                    >
                       {g.name}
                     </option>
                   ))}
@@ -450,7 +485,9 @@ export default function Dashboard() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Search</Label>
+              <Label className="text-slate-700 dark:text-white/80">
+                Search
+              </Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500 dark:text-white/40" />
                 <Input
@@ -483,7 +520,8 @@ export default function Dashboard() {
 
             {activeFiltersCount > 0 ? (
               <div className="ml-0 text-xs text-slate-600 dark:text-white/60 lg:ml-2">
-                {activeFiltersCount} filter{activeFiltersCount > 1 ? "s" : ""} active
+                {activeFiltersCount} filter{activeFiltersCount > 1 ? "s" : ""}{" "}
+                active
               </div>
             ) : null}
           </div>
@@ -538,7 +576,9 @@ export default function Dashboard() {
                   <div className="font-semibold text-slate-900 dark:text-white">
                     {formatMoney(row.amount)}
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-white/50">USD</div>
+                  <div className="text-xs text-slate-500 dark:text-white/50">
+                    USD
+                  </div>
                 </div>
               ),
             },
@@ -546,7 +586,10 @@ export default function Dashboard() {
               key: "status",
               title: "Status",
               render: (row) => (
-                <Badge variant={statusVariant(row.status) as any} className="rounded-xl capitalize">
+                <Badge
+                  variant={statusVariant(row.status) as any}
+                  className="rounded-xl capitalize"
+                >
                   {row.status ?? "-"}
                 </Badge>
               ),
@@ -614,7 +657,9 @@ export default function Dashboard() {
                   <div className="font-semibold text-slate-900 dark:text-white">
                     {formatMoney(row.amount)}
                   </div>
-                  <div className="text-xs text-slate-500 dark:text-white/50">USD</div>
+                  <div className="text-xs text-slate-500 dark:text-white/50">
+                    USD
+                  </div>
                 </div>
               ),
             },
@@ -622,7 +667,10 @@ export default function Dashboard() {
               key: "status",
               title: "Status",
               render: (row) => (
-                <Badge variant={statusVariant(row.status) as any} className="rounded-xl capitalize">
+                <Badge
+                  variant={statusVariant(row.status) as any}
+                  className="rounded-xl capitalize"
+                >
                   {row.status ?? "-"}
                 </Badge>
               ),

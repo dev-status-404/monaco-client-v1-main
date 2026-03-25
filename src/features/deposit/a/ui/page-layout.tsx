@@ -393,7 +393,9 @@ export default function DepositLayout() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/5 p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Total records</div>
+            <div className="text-xs text-slate-600 dark:text-white/60">
+              Total records
+            </div>
             <Wallet className="size-4 text-slate-500 dark:text-white/70" />
           </div>
           <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
@@ -403,7 +405,9 @@ export default function DepositLayout() {
 
         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/5 p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Completed</div>
+            <div className="text-xs text-slate-600 dark:text-white/60">
+              Completed
+            </div>
             <BadgeCheck className="size-4 text-slate-500 dark:text-white/70" />
           </div>
           <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
@@ -417,7 +421,9 @@ export default function DepositLayout() {
 
         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/5 p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Pending</div>
+            <div className="text-xs text-slate-600 dark:text-white/60">
+              Pending
+            </div>
             <Hourglass className="size-4 text-slate-500 dark:text-white/70" />
           </div>
           <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
@@ -427,7 +433,9 @@ export default function DepositLayout() {
 
         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/5 p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Failed</div>
+            <div className="text-xs text-slate-600 dark:text-white/60">
+              Failed
+            </div>
             <AlertTriangle className="size-4 text-slate-500 dark:text-white/70" />
           </div>
           <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
@@ -441,7 +449,9 @@ export default function DepositLayout() {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:flex-1">
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Status</Label>
+              <Label className="text-slate-700 dark:text-white/80">
+                Status
+              </Label>
               <div className="relative">
                 <Filter className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500 dark:text-white/40" />
                 <select
@@ -495,7 +505,9 @@ export default function DepositLayout() {
             </div>
 
             <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-              <Label className="text-slate-700 dark:text-white/80">Search</Label>
+              <Label className="text-slate-700 dark:text-white/80">
+                Search
+              </Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500 dark:text-white/40" />
                 <Input
@@ -535,7 +547,9 @@ export default function DepositLayout() {
       {/* Pagination */}
       <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-black/5 p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600 dark:text-white/60">Rows</span>
+          <span className="text-xs text-slate-600 dark:text-white/60">
+            Rows
+          </span>
           <div className="flex gap-2">
             {[10, 20, 50].map((l) => (
               <Button
@@ -561,7 +575,9 @@ export default function DepositLayout() {
           </Button>
 
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-600 dark:text-white/60">Page</span>
+            <span className="text-xs text-slate-600 dark:text-white/60">
+              Page
+            </span>
             <Input
               defaultValue={page}
               className="h-9 w-16 rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-black/5 text-slate-900 dark:text-white"
@@ -572,7 +588,9 @@ export default function DepositLayout() {
                 setQuery((p) => ({ ...p, page: next }));
               }}
             />
-            <span className="text-xs text-slate-600 dark:text-white/60">/ {totalPages}</span>
+            <span className="text-xs text-slate-600 dark:text-white/60">
+              / {totalPages}
+            </span>
           </div>
 
           <Button
@@ -646,7 +664,9 @@ export default function DepositLayout() {
 
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Select Game</Label>
+              <Label className="text-slate-700 dark:text-white/80">
+                Select Game
+              </Label>
               <GamesSelect
                 value={form.game_id}
                 disabled={isSubmitting}
@@ -661,7 +681,9 @@ export default function DepositLayout() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Amount</Label>
+              <Label className="text-slate-700 dark:text-white/80">
+                Amount
+              </Label>
               <Input
                 value={form.amount}
                 disabled={isSubmitting}
@@ -675,7 +697,9 @@ export default function DepositLayout() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-white/80">Currency</Label>
+                <Label className="text-slate-700 dark:text-white/80">
+                  Currency
+                </Label>
                 <Input
                   value={form.currency}
                   disabled={isSubmitting}
@@ -688,7 +712,9 @@ export default function DepositLayout() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-white/80">Provider</Label>
+                <Label className="text-slate-700 dark:text-white/80">
+                  Provider
+                </Label>
                 <select
                   value={form.provider}
                   disabled={isSubmitting}
@@ -698,7 +724,11 @@ export default function DepositLayout() {
                   className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-slate-900 outline-none dark:border-white/10 dark:bg-white/5 dark:text-white disabled:opacity-60"
                 >
                   {PROVIDER_OPTIONS.map((option) => (
-                    <option key={option} value={option} className="bg-white dark:bg-slate-900">
+                    <option
+                      key={option}
+                      value={option}
+                      className="bg-white dark:bg-slate-900"
+                    >
                       {option}
                     </option>
                   ))}
