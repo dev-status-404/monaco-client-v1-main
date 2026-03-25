@@ -50,6 +50,8 @@ const STATUS_OPTIONS: { value: DepositStatus; label: string }[] = [
   { value: "failed", label: "Failed" },
 ];
 
+const PROVIDER_OPTIONS = ["Stripe", "Coinflow"] as const;
+
 const safeText = (v: any) => String(v ?? "").trim();
 
 function formatMoney(amount: string, currency = "USD") {
@@ -106,7 +108,7 @@ export function DepositActionsForm(
   // editable state
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
-  const [provider, setProvider] = useState("Stripe");
+  const [provider, setProvider] = useState<(typeof PROVIDER_OPTIONS)[number] | string>("Stripe");
   const [status, setStatus] = useState<DepositStatus>("pending");
 
   const [gameId, setGameId] = useState("");
@@ -120,7 +122,8 @@ export function DepositActionsForm(
 
     setAmount(safeText(r?.amount) || "");
     setCurrency(safeText(r?.currency) || "USD");
-    setProvider(safeText(r?.provider) || "Stripe");
+    const nextProvider = safeText(r?.provider) || "Stripe";
+    setProvider(nextProvider);
 
     const st = safeText(r?.status).toLowerCase() as DepositStatus;
     setStatus(
@@ -322,12 +325,18 @@ export function DepositActionsForm(
 
         <div className="space-y-1 col-span-2">
           <Label>Provider</Label>
-          <Input
+          <select
             value={provider}
             disabled={!canEdit || isSubmitting}
             onChange={(e) => setProvider(e.target.value)}
-            placeholder="Stripe"
-          />
+            className="h-10 w-full rounded-2xl border border-border bg-card px-3 text-sm outline-none disabled:opacity-60"
+          >
+            {PROVIDER_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* ✅ Admin status change */}

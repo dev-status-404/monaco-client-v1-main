@@ -80,6 +80,8 @@ const STATUS_OPTIONS: { value: DepositStatus; label: string }[] = [
   { value: "failed", label: "Failed" },
 ];
 
+const PROVIDER_OPTIONS = ["Stripe", "Coinflow"] as const;
+
 const DATE_OPTIONS: {
   value: "all" | "today" | "last7" | "last30";
   label: string;
@@ -687,15 +689,20 @@ export default function DepositLayout() {
 
               <div className="space-y-2">
                 <Label className="text-slate-700 dark:text-white/80">Provider</Label>
-                <Input
+                <select
                   value={form.provider}
                   disabled={isSubmitting}
                   onChange={(e) =>
                     setForm((p) => ({ ...p, provider: e.target.value }))
                   }
-                  placeholder="Stripe"
-                  className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
-                />
+                  className="h-10 w-full rounded-2xl border border-slate-200 bg-white px-3 text-slate-900 outline-none dark:border-white/10 dark:bg-white/5 dark:text-white disabled:opacity-60"
+                >
+                  {PROVIDER_OPTIONS.map((option) => (
+                    <option key={option} value={option} className="bg-white dark:bg-slate-900">
+                      {option}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
