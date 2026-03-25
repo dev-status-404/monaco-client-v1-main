@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "UC Sweeps",
+  title: "Monaco",
   description: "Play for fun or real prizes",
 };
 
