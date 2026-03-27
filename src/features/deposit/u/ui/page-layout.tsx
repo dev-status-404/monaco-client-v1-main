@@ -187,12 +187,20 @@ export default function DepositLayout() {
     provider: string;
     game_id: string;
     game_name: string;
+    cardNumber: string;
+    cardCvv: string;
+    cardExpiry: string;
+    cardholderName: string;
   }>({
     amount: "",
     currency: "USD",
     provider: "Stripe",
     game_id: "",
     game_name: "",
+    cardNumber: "",
+    cardCvv: "",
+    cardExpiry: "",
+    cardholderName: "",
   });
 
   // ✅ normalize deposits list
@@ -369,6 +377,10 @@ export default function DepositLayout() {
             provider: "Stripe",
             game_id: "",
             game_name: "",
+            cardNumber: "",
+            cardCvv: "",
+            cardExpiry: "",
+            cardholderName: "",
           });
         },
         onError: (err: any) => {
@@ -757,6 +769,85 @@ export default function DepositLayout() {
                 </select>
               </div>
             </div>
+
+            {/* Card Information - Show when provider is selected */}
+            {form.provider && (
+              <div className="space-y-4 pt-2">
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Cardholder Name
+                  </Label>
+                  <Input
+                    value={form.cardholderName}
+                    disabled={isSubmitting}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, cardholderName: e.target.value }))
+                    }
+                    placeholder="John Doe"
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Card Number
+                  </Label>
+                  <Input
+                    value={form.cardNumber}
+                    disabled={isSubmitting}
+                    onChange={(e) => {
+                      // Format card number with spaces
+                      const value = e.target.value.replace(/\s/g, "");
+                      const formatted = value.match(/.{1,4}/g)?.join(" ") || value;
+                      setForm((p) => ({ ...p, cardNumber: formatted }));
+                    }}
+                    placeholder="1234 5678 9012 3456"
+                    maxLength={19}
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 dark:text-white/80">
+                      Expiry Date
+                    </Label>
+                    <Input
+                      value={form.cardExpiry}
+                      disabled={isSubmitting}
+                      onChange={(e) => {
+                        // Format as MM/YY
+                        let value = e.target.value.replace(/\D/g, "");
+                        if (value.length >= 2) {
+                          value = value.slice(0, 2) + "/" + value.slice(2, 4);
+                        }
+                        setForm((p) => ({ ...p, cardExpiry: value }));
+                      }}
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-slate-700 dark:text-white/80">
+                      CVV
+                    </Label>
+                    <Input
+                      value={form.cardCvv}
+                      disabled={isSubmitting}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        setForm((p) => ({ ...p, cardCvv: value }));
+                      }}
+                      placeholder="123"
+                      maxLength={4}
+                      className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             <DialogFooter className="gap-2">
               <Button

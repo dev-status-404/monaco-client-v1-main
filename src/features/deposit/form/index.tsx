@@ -116,6 +116,11 @@ export function DepositActionsForm(
   const [gameId, setGameId] = useState("");
   const [gameName, setGameName] = useState("");
 
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardholderName, setCardholderName] = useState("");
+
   // hydrate from row
   useEffect(() => {
     setErr(null);
@@ -136,6 +141,11 @@ export function DepositActionsForm(
 
     setGameId(safeText(r?.game_id) || safeText(r?.game?.id) || "");
     setGameName(safeText(r?.game_name) || safeText(r?.game?.name) || "");
+
+    setCardNumber("");
+    setCardCvv("");
+    setCardExpiry("");
+    setCardholderName("");
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [row?.id, mode]);
@@ -340,6 +350,69 @@ export function DepositActionsForm(
             ))}
           </select>
         </div>
+
+        {/* Card Information - Show when provider is selected */}
+        {provider && canEdit && (
+          <>
+            <div className="space-y-1 col-span-2">
+              <Label>Cardholder Name</Label>
+              <Input
+                value={cardholderName}
+                disabled={isSubmitting}
+                onChange={(e) => setCardholderName(e.target.value)}
+                placeholder="John Doe"
+              />
+            </div>
+
+            <div className="space-y-1 col-span-2">
+              <Label>Card Number</Label>
+              <Input
+                value={cardNumber}
+                disabled={isSubmitting}
+                onChange={(e) => {
+                  // Format card number with spaces
+                  const value = e.target.value.replace(/\s/g, "");
+                  const formatted = value.match(/.{1,4}/g)?.join(" ") || value;
+                  setCardNumber(formatted);
+                }}
+                placeholder="1234 5678 9012 3456"
+                maxLength={19}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Expiry Date</Label>
+              <Input
+                value={cardExpiry}
+                disabled={isSubmitting}
+                onChange={(e) => {
+                  // Format as MM/YY
+                  let value = e.target.value.replace(/\D/g, "");
+                  if (value.length >= 2) {
+                    value = value.slice(0, 2) + "/" + value.slice(2, 4);
+                  }
+                  setCardExpiry(value);
+                }}
+                placeholder="MM/YY"
+                maxLength={5}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>CVV</Label>
+              <Input
+                value={cardCvv}
+                disabled={isSubmitting}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  setCardCvv(value);
+                }}
+                placeholder="123"
+                maxLength={4}
+              />
+            </div>
+          </>
+        )}
 
         {/* ✅ Admin status change */}
         {allowStatusEdit && (
