@@ -798,7 +798,8 @@ export default function DepositLayout() {
                     onChange={(e) => {
                       // Format card number with spaces
                       const value = e.target.value.replace(/\s/g, "");
-                      const formatted = value.match(/.{1,4}/g)?.join(" ") || value;
+                      const formatted =
+                        value.match(/.{1,4}/g)?.join(" ") || value;
                       setForm((p) => ({ ...p, cardNumber: formatted }));
                     }}
                     placeholder="1234 5678 9012 3456"
