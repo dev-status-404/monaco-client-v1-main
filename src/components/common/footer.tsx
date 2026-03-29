@@ -68,6 +68,17 @@ export default function Footer() {
             />
           </div>
 
+          {/* Contact Hub Link */}
+          <div className="pt-2">
+            <a
+              href="/contact"
+              className="inline-flex items-center gap-2 text-lg font-semibold text-primary hover:text-primary/80 transition"
+            >
+              <MessageSquare className="h-5 w-5" />
+              Contact Hub
+            </a>
+          </div>
+
           {/* Left links */}
           {/* <div className="space-y-5 pt-2">
             {leftLinks.map((t) => (
@@ -95,14 +106,14 @@ export default function Footer() {
               </div>
             </div>
 
-            <div className="border-b border-border/60 pb-6">
+            <a href="/contact" className="block border-b border-border/60 pb-6 cursor-pointer hover:opacity-80 transition">
               <div className="flex items-center justify-between">
                 <p className="text-4xl font-semibold tracking-tight text-foreground">
                   Give us a feedback
                 </p>
                 <Mail className="h-7 w-7 text-foreground/80" />
               </div>
-            </div>
+            </a>
           </div>
 
           {/* Right links */}

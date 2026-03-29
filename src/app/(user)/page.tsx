@@ -10,6 +10,7 @@ import HowToPlay from "@/components/layout/marketing/how-to-play";
 import JoinCta from "@/components/layout/marketing/join-cta";
 import LatestWinners from "@/components/layout/marketing/latest_winners";
 import PartnerProgramCard from "@/components/layout/marketing/partnership-program";
+import ContactSection from "@/components/layout/marketing/contact-section";
 
 export default function Page() {
   return (
@@ -29,6 +30,8 @@ export default function Page() {
           <GamingPartnersSection />
           <div className="mt-10" />
           <PartnerProgramCard />
+          <div className="mt-16" />
+          <ContactSection />
           <div className="mt-10" />
           <Footer />
         </Container>
