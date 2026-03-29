@@ -106,7 +106,10 @@ export default function Footer() {
               </div>
             </div>
 
-            <a href="/contact" className="block border-b border-border/60 pb-6 cursor-pointer hover:opacity-80 transition">
+            <a
+              href="/contact"
+              className="block border-b border-border/60 pb-6 cursor-pointer hover:opacity-80 transition"
+            >
               <div className="flex items-center justify-between">
                 <p className="text-4xl font-semibold tracking-tight text-foreground">
                   Give us a feedback

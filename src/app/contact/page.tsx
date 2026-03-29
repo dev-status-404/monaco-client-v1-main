@@ -18,7 +18,7 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -35,11 +35,11 @@ export default function ContactPage() {
     try {
       // Replace this with your actual API endpoint
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      
+
       toast.success("Message sent successfully!", {
         description: "We'll get back to you as soon as possible.",
       });
-      
+
       // Reset form
       setFormData({
         name: "",
@@ -72,7 +72,8 @@ export default function ContactPage() {
             <h2 className="text-2xl font-semibold mb-6">Get in Touch</h2>
             <p className="text-muted-foreground mb-8">
               Feel free to reach out to us through any of the following methods.
-              Our team is available to assist you with any inquiries you may have.
+              Our team is available to assist you with any inquiries you may
+              have.
             </p>
           </div>
 
@@ -83,8 +84,12 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Email</h3>
-                <p className="text-sm text-muted-foreground">support@ucsweeps.com</p>
-                <p className="text-sm text-muted-foreground">contact@ucsweeps.com</p>
+                <p className="text-sm text-muted-foreground">
+                  support@ucsweeps.com
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  contact@ucsweeps.com
+                </p>
               </div>
             </div>
 
@@ -132,7 +137,7 @@ export default function ContactPage() {
         {/* Contact Form */}
         <div className="bg-card border border-border/60 rounded-lg p-8 shadow-sm">
           <h2 className="text-2xl font-semibold mb-6">Send us a Message</h2>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="name">

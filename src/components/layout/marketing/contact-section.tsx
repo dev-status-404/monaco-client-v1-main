@@ -18,7 +18,7 @@ export default function ContactSection() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -34,11 +34,11 @@ export default function ContactSection() {
     try {
       // Replace this with your actual API endpoint
       await new Promise((resolve) => setTimeout(resolve, 1500));
-      
+
       toast.success("Message sent successfully!", {
         description: "We'll get back to you as soon as possible.",
       });
-      
+
       // Reset form
       setFormData({
         name: "",
@@ -59,7 +59,7 @@ export default function ContactSection() {
     <section className="relative">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 rounded-3xl" />
-      
+
       <div className="relative grid gap-12 lg:grid-cols-2 lg:gap-16">
         {/* Left Column - Info */}
         <div className="space-y-8">
@@ -68,7 +68,8 @@ export default function ContactSection() {
               Get in Touch
             </h2>
             <p className="text-lg text-muted-foreground">
-              Have questions? We're here to help. Send us a message and we'll respond as soon as possible.
+              Have questions? We're here to help. Send us a message and we'll
+              respond as soon as possible.
             </p>
           </div>
 
@@ -79,8 +80,12 @@ export default function ContactSection() {
               </div>
               <div>
                 <h3 className="font-semibold text-lg mb-1">Email Us</h3>
-                <p className="text-sm text-muted-foreground">support@ucsweeps.com</p>
-                <p className="text-sm text-muted-foreground">contact@ucsweeps.com</p>
+                <p className="text-sm text-muted-foreground">
+                  support@ucsweeps.com
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  contact@ucsweeps.com
+                </p>
               </div>
             </div>
 
