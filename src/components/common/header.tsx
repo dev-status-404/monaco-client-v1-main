@@ -19,7 +19,7 @@ export default function Header() {
         {/* ===== TOP BAR ===== */}
         <div className="flex items-center justify-between">
           {/* LEFT (desktop only) */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="flex-1 hidden md:flex items-center gap-3">
             <div className="flex items-center rounded-full bg-zinc-900 p-1 shadow-inner">
               {/* <NavItem href="#" active>
                 Casino
@@ -30,16 +30,18 @@ export default function Header() {
           </div>
 
           {/* MOBILE MENU BUTTON */}
-          <button
-            onClick={() => setOpen(!open)}
-            className="md:hidden text-yellow-400"
-          >
-            {open ? <X size={26} /> : <Menu size={26} />}
-          </button>
+          <div className="flex-1 flex md:hidden">
+            <button
+              onClick={() => setOpen(!open)}
+              className="text-yellow-400"
+            >
+              {open ? <X size={26} /> : <Menu size={26} />}
+            </button>
+          </div>
 
           {/* LOGO */}
           <Link href="/" className="flex items-center justify-center">
-            <div className="relative h-12 w-12 sm:h-14 sm:w-14">
+            <div className="relative h-16 w-16 sm:h-16 sm:w-16">
               <Image
                 src={LOGO}
                 alt="Logo"
@@ -51,12 +53,12 @@ export default function Header() {
           </Link>
 
           {/* RIGHT (desktop only) */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="flex-1 hidden md:flex items-center justify-end gap-3">
             <AuthButtons />
           </div>
 
           {/* spacer to balance mobile layout */}
-          <div className="md:hidden w-6" />
+          <div className="flex-1 md:hidden" />
         </div>
 
         {/* ===== MOBILE DROPDOWN ===== */}

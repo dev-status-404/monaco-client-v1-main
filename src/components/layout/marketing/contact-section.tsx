@@ -81,10 +81,10 @@ export default function ContactSection() {
               <div>
                 <h3 className="font-semibold text-lg mb-1">Email Us</h3>
                 <p className="text-sm text-muted-foreground">
-                  support@ucsweeps.com
+                  support@monacogameroom.com
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  contact@ucsweeps.com
+                  contact@monacogameroom.com
                 </p>
               </div>
             </div>

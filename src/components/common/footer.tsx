@@ -59,12 +59,12 @@ export default function Footer() {
             <Row
               icon={<Mail className="h-6 w-6" />}
               label="Support :"
-              value="support@ucsweeps.com"
+              value="support@monacogameroom.com"
             />
             <Row
               icon={<Handshake className="h-6 w-6" />}
               label="Contact :"
-              value="contact@ucsweeps.com"
+              value="contact@monacogameroom.com"
             />
           </div>
 

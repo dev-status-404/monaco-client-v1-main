@@ -97,17 +97,6 @@ export default function TopOfWeekCta() {
             </div>
 
             {/* ======================
-                NAV ICON ROW
-            ====================== */}
-            <div className="mt-6 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-              <NavItem label="Spin" icon="🎡" active />
-              <NavItem label="Buy" icon="💸" />
-              <NavItem label="Home" icon="🏠" />
-              <NavItem label="Platform" icon="🪙" />
-              <NavItem label="Offer" icon="🎁" />
-            </div>
-
-            {/* ======================
                 TOP OF THE WEEK
             ====================== */}
             <div className="mt-8">
