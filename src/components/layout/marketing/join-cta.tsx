@@ -1,25 +1,24 @@
 "use client";
 
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
-// ✅ Replace with your real assets
-import LEPRECHAUN from "../../../../public/assets/SVGs/luke/hat.png"; // character on right
-import GAME_1 from "../../../../public/assets/SVGs/luke/card_1.svg";
-import GAME_2 from "../../../../public/assets/SVGs/luke/card_02.svg";
+import LEPRECHAUN from "../../../../public/assets/SVGs/luke/hat.png";
 
 type TopGame = {
   id: string;
   title: string;
-  image: StaticImageData;
+  image: string;
   href?: string;
 };
 
 const topWeekGames: TopGame[] = [
-  { id: "golden-dragon", title: "Golden Dragon", image: GAME_1, href: "/games/golden-dragon" },
-  { id: "magic-city", title: "Magic City", image: GAME_2, href: "/games/magic-city" },
+  { id: "firekirin", title: "Firekirin", image: "https://ik.imagekit.io/kowkpgj32/games/Fire-Kirin-PNG-Logo-transparent.png", href: "https://firekirin.com/download-fire-kirin-app.html" },
+  { id: "golden-dragon", title: "Golden Dragon", image: "https://ik.imagekit.io/kowkpgj32/games/goden.png?updatedAt=1770682005809", href: "https://goldendragoncity.com/SSLobby/m5682.2/web-mobile/index.html?" },
+  { id: "ultrapanda", title: "Ultrapanda", image: "https://ik.imagekit.io/kowkpgj32/games/1_Lcjd7YYZJhQvEVoI0Jctsg.png", href: "https://www.ultrapanda.mobi/" },
+  { id: "pandamaster", title: "Pandamaster", image: "https://ik.imagekit.io/kowkpgj32/games/panda%20master.webp", href: "https://pandamaster.vip:8888/" },
 ];
 
 export default function TopOfWeekCta() {
@@ -104,7 +103,7 @@ export default function TopOfWeekCta() {
                 TOP OF THE WEEK
               </h4>
 
-              <div className="mt-5 grid grid-cols-2 gap-4">
+              <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
                 {topWeekGames.map((g, i) => (
                   <TopWeekCard key={g.id} game={g} bigNumber={i + 1} />
                 ))}
@@ -153,6 +152,8 @@ function TopWeekCard({ game, bigNumber }: { game: TopGame; bigNumber: number }) 
   return (
     <Comp
       {...props}
+      target="_blank"
+      rel="noopener noreferrer"
       className={cn(
         "group relative overflow-hidden rounded-2xl border border-amber-400/25 bg-black/20",
         "shadow-[0_20px_55px_rgba(0,0,0,0.55)]",
@@ -172,7 +173,7 @@ function TopWeekCard({ game, bigNumber }: { game: TopGame; bigNumber: number }) 
 
       {/* image */}
       <div className="relative aspect-[4/5] w-full">
-        <Image src={game.image} alt={game.title} fill className="object-cover" />
+        <Image src={game.image} alt={game.title} fill className="object-cover" unoptimized />
         <div className="absolute inset-0 bg-black/15 transition group-hover:bg-black/30" />
 
         {/* play badge */}

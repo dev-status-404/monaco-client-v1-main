@@ -1,27 +1,25 @@
 "use client";
 
 import React from "react";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
-
-// ✅ Replace with your real images
-import WIN_1 from "../../../../public/assets/SVGs/pearl.svg";
-import WIN_2 from "../../../../public/assets/SVGs/pearl.svg";
-import WIN_3 from "../../../../public/assets/SVGs/pearl.svg";
 
 type WinnerItem = {
   id: string;
   title: string;
-  image: StaticImageData;
-  coins: number; // left value (1,188)
-  sc: number; // green value (5.9)
-  timeAgo: string; // "2h"
+  image: string;
+  coins: number;
+  sc: number;
+  timeAgo: string;
 };
 
 const winners: WinnerItem[] = [
-  { id: "ultrapanda", title: "UltraPanda Bonus", image: WIN_1, coins: 1188, sc: 5.9, timeAgo: "2h" },
-  { id: "golden-dragon", title: "Golden Dragon", image: WIN_2, coins: 1188, sc: 0, timeAgo: "2h" },
-  { id: "magic-city", title: "Magic City", image: WIN_3, coins: 1188, sc: 0, timeAgo: "2h" },
+  { id: "firekirin", title: "Firekirin", image: "https://ik.imagekit.io/kowkpgj32/games/Fire-Kirin-PNG-Logo-transparent.png", coins: 4250, sc: 12.5, timeAgo: "5m" },
+  { id: "golden-dragon", title: "Golden Dragon", image: "https://ik.imagekit.io/kowkpgj32/games/goden.png?updatedAt=1770682005809", coins: 3100, sc: 8.2, timeAgo: "14m" },
+  { id: "ultrapanda", title: "Ultrapanda", image: "https://ik.imagekit.io/kowkpgj32/games/1_Lcjd7YYZJhQvEVoI0Jctsg.png", coins: 2800, sc: 5.9, timeAgo: "31m" },
+  { id: "pandamaster", title: "Pandamaster", image: "https://ik.imagekit.io/kowkpgj32/games/panda%20master.webp", coins: 1950, sc: 4.1, timeAgo: "1h" },
+  { id: "vblink", title: "Vblink", image: "https://ik.imagekit.io/kowkpgj32/games/cropped.jpg", coins: 1500, sc: 3.3, timeAgo: "2h" },
+  { id: "riversweeps", title: "RiverSweeps", image: "https://ik.imagekit.io/rvrrhkzxq/hqdefault.jpg", coins: 980, sc: 2.7, timeAgo: "3h" },
 ];
 
 export default function LatestWinners() {
@@ -65,6 +63,7 @@ function WinnerCard({ item }: { item: WinnerItem }) {
               className="object-cover"
               priority={false}
               sizes="270px"
+              unoptimized
             />
           </div>
         </div>

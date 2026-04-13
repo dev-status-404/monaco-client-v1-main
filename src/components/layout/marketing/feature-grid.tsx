@@ -1,31 +1,13 @@
 "use client";
 
 import React from "react";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 import { cn } from "@/lib/utils";
-
-/**
- * ✅ DROP-IN SECTION
- * - Matches the screenshot layout (title/subtitle + "NEW FREE-TO-PLAY GAMES" + 3x2 grid look)
- * - Badges: New / Hot (top-left)
- * - Ribbon: BUY-BONUS & FAST-PLAY (top-right optional)
- * - Hover: zoom + dark overlay + play button
- *
- * Replace the imports below with your real game images.
- */
-
-// ✅ Replace with your real images in /public/assets/games/
-import Game1 from "../../../../public/assets/SVGs/luke/caishen.svg";
-import Game2 from "../../../../public/assets/SVGs/luke/chatur.svg";
-import Game3 from "../../../../public/assets/SVGs/luke/pearl.svg";
-import Game4 from "../../../../public/assets/SVGs/luke/china.svg";
-import Game5 from "../../../../public/assets/SVGs/luke/bagua.svg";
-import Game6 from "../../../../public/assets/SVGs/luke/jack.svg";
 
 type GameItem = {
   id: string;
   title: string;
-  image: StaticImageData;
+  image: string;
   isNew?: boolean;
   isHot?: boolean;
   ribbon?: string;
@@ -34,56 +16,148 @@ type GameItem = {
 
 const games: GameItem[] = [
   {
-    id: "bagua",
-    title: "Bagua",
-    image: Game1,
+    id: "king-of-pop",
+    title: "King of Pop",
+    image: "https://ik.imagekit.io/kowkpgj32/games/nofpop.webp?updatedAt=1770682003571",
     isNew: true,
     isHot: true,
-    ribbon: "BUY-BONUS & FAST-PLAY",
-    href: "/games/bagua",
+    href: "https://www.slots88888.com/",
   },
   {
-    id: "blackjack",
-    title: "BlackJack",
-    image: Game2,
+    id: "pandamaster",
+    title: "Pandamaster",
+    image: "https://ik.imagekit.io/kowkpgj32/games/panda%20master.webp",
     isNew: true,
     isHot: true,
-    href: "/games/blackjack",
+    href: "https://pandamaster.vip:8888/",
   },
   {
-    id: "burning-pearl",
-    title: "Burning Pearl",
-    image: Game3,
+    id: "tai-chi-master",
+    title: "Tai Chi Master",
+    image: "https://ik.imagekit.io/kowkpgj32/games/splash%20master.jpg?updatedAt=1770682001744",
     isNew: true,
     isHot: true,
-    ribbon: "BUY-BONUS & FAST-PLAY",
-    href: "/games/burning-pearl",
+    href: "http://okay.jkgame.vip/web_game/taichimaster_pc/",
   },
   {
-    id: "cashen-riches",
-    title: "Cashen Riches",
-    image: Game4,
+    id: "orionstar",
+    title: "Orionstar",
+    image: "https://ik.imagekit.io/kowkpgj32/games/star.webp",
     isNew: true,
     isHot: true,
-    href: "/games/cashen-riches",
+    href: "http://start.orionstars.vip:8580/",
   },
   {
-    id: "cash-hunter",
-    title: "Cash Hunter",
-    image: Game5,
+    id: "egames",
+    title: "Egames",
+    image: "https://ik.imagekit.io/rvrrhkzxq/Untitled%20design%20(17).png",
     isNew: true,
     isHot: true,
-    ribbon: "BUY-BONUS & FAST-PLAY",
-    href: "/games/cash-hunter",
+    href: "https://play.egames.com/",
   },
   {
-    id: "china",
-    title: "China",
-    image: Game6,
+    id: "fortune-2-go",
+    title: "Fortune 2 GO",
+    image: "https://ik.imagekit.io/kowkpgj32/games/fortuen.png?updatedAt=1770682003696",
     isNew: true,
     isHot: true,
-    ribbon: "BUY-BONUS & FAST-PLAY",
-    href: "/games/china",
+    href: "https://www.fortune2go20.com/",
+  },
+  {
+    id: "juwa-v2",
+    title: "Juwa Version 2",
+    image: "https://ik.imagekit.io/kowkpgj32/games/bg.jpg",
+    isNew: true,
+    isHot: true,
+    href: "https://m.juwa2.com",
+  },
+  {
+    id: "golden-dragon",
+    title: "Golden Dragon",
+    image: "https://ik.imagekit.io/kowkpgj32/games/goden.png?updatedAt=1770682005809",
+    isNew: true,
+    isHot: true,
+    href: "https://goldendragoncity.com/SSLobby/m5682.2/web-mobile/index.html?",
+  },
+  {
+    id: "riversweeps",
+    title: "RiverSweeps",
+    image: "https://ik.imagekit.io/rvrrhkzxq/hqdefault.jpg",
+    isNew: true,
+    isHot: true,
+    href: "https://river777.com/",
+  },
+  {
+    id: "big-daddy-dragon",
+    title: "Big Daddy Dragon",
+    image: "https://ik.imagekit.io/kowkpgj32/games/big%20dady.png?updatedAt=1770682001752",
+    isNew: true,
+    isHot: true,
+    href: "https://www.playbdd.com/",
+  },
+  {
+    id: "vblink",
+    title: "Vblink",
+    image: "https://ik.imagekit.io/kowkpgj32/games/cropped.jpg",
+    isNew: true,
+    isHot: true,
+    href: "https://www.vblink777.club/",
+  },
+  {
+    id: "ultrapanda",
+    title: "Ultrapanda",
+    image: "https://ik.imagekit.io/kowkpgj32/games/1_Lcjd7YYZJhQvEVoI0Jctsg.png",
+    isNew: true,
+    isHot: true,
+    href: "https://www.ultrapanda.mobi/",
+  },
+  {
+    id: "new-game-vault",
+    title: "New Game Vault",
+    image: "https://ik.imagekit.io/kowkpgj32/games/background.jpg",
+    isNew: true,
+    isHot: true,
+    href: "https://www.gamevault77777.com",
+  },
+  {
+    id: "vegassweep",
+    title: "Vegassweep",
+    image: "https://ik.imagekit.io/kowkpgj32/games/0x0.png",
+    isNew: true,
+    isHot: true,
+    href: "https://m.lasvegassweeps.com/",
+  },
+  {
+    id: "nova-play",
+    title: "Nova Play",
+    image: "https://ik.imagekit.io/kowkpgj32/games/novap.png?updatedAt=1770682005184",
+    isNew: true,
+    isHot: true,
+    href: "https://novaplay.cc/",
+  },
+  {
+    id: "firekirin",
+    title: "Firekirin",
+    image: "https://ik.imagekit.io/kowkpgj32/games/Fire-Kirin-PNG-Logo-transparent.png",
+    isNew: true,
+    isHot: true,
+    href: "https://firekirin.com/download-fire-kirin-app.html",
+  },
+  {
+    id: "gamevault",
+    title: "Gamevault",
+    image: "https://ik.imagekit.io/kowkpgj32/games/NIm6-IBB_400x400.png",
+    isNew: true,
+    isHot: true,
+    href: "https://download.gamevault999.com/",
+  },
+  {
+    id: "lucky-ox",
+    title: "Lucky OX",
+    image: "https://ik.imagekit.io/kowkpgj32/games/kuckyox.png?updatedAt=1770682005209",
+    isNew: true,
+    isHot: true,
+    href: "https://ik.imagekit.io/kowkpgj32/games/kuckyox.png?updatedAt=1770682005209",
   },
 ];
 
@@ -110,7 +184,7 @@ export default function CasinoGamesSection() {
           </h3>
 
           {/* Grid */}
-          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-3">
+          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {games.map((g) => (
               <GameCard key={g.id} game={g} />
             ))}
@@ -126,6 +200,8 @@ function GameCard({ game }: { game: GameItem }) {
   const compProps = game.href
     ? {
         href: game.href,
+        target: "_blank",
+        rel: "noopener noreferrer",
         "aria-label": `Open ${game.title}`,
       }
     : {};

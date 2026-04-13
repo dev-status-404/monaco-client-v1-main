@@ -1,26 +1,19 @@
 "use client";
 
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-// ✅ Replace these with your real hero images (like the roulette screenshot)
-import HERO_1 from "../../../../public/assets/SVGs/hero.svg";
-import HERO_2 from "../../../../public/assets/SVGs/hero.svg";
-import HERO_3 from "../../../../public/assets/SVGs/hero.svg";
-
 type Slide = {
-  src: StaticImageData;
+  src: string;
   alt: string;
 };
 
 export default function Hero() {
   const slides: Slide[] = useMemo(
     () => [
-      { src: HERO_1, alt: "Lucky Luke casino hero slide 1" },
-      { src: HERO_2, alt: "Lucky Luke casino hero slide 2" },
-      { src: HERO_3, alt: "Lucky Luke casino hero slide 3" },
+      { src: "https://ik.imagekit.io/kowkpgj32/games/big%20dady.png?updatedAt=1770682001752", alt: "Big Daddy Dragon" },
     ],
     []
   );
