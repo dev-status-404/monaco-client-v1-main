@@ -23,15 +23,15 @@ export default function MainLayout({
 
   if (isAuthPath || isMarketingPath) {
     return (
-      <SocketBridge userId={user?.id || ""}>
-        <GoogleOAuthProvider
-          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string}
-        >
-          <ReactQueryClientProvider>
+      <GoogleOAuthProvider
+        clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string}
+      >
+        <ReactQueryClientProvider>
+          <SocketBridge userId={user?.id || ""}>
             <main className="w-full h-full">{children}</main>
-          </ReactQueryClientProvider>
-        </GoogleOAuthProvider>
-      </SocketBridge>
+          </SocketBridge>
+        </ReactQueryClientProvider>
+      </GoogleOAuthProvider>
     );
   }
 
@@ -39,8 +39,8 @@ export default function MainLayout({
     <GoogleOAuthProvider
       clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID as string}
     >
-      <SocketBridge userId={user?.id || ""}>
-        <ReactQueryClientProvider>
+      <ReactQueryClientProvider>
+        <SocketBridge userId={user?.id || ""}>
           <SidebarProvider>
             {/* <AppSidebar collapsible="offcanvas" variant="sidebar" /> */}
             <SidebarInset>
@@ -48,8 +48,8 @@ export default function MainLayout({
               <main className="flex flex-1 flex-col gap-4 p-4 bg-card ">{children}</main>
             </SidebarInset>
           </SidebarProvider>
-        </ReactQueryClientProvider>
-      </SocketBridge>
+        </SocketBridge>
+      </ReactQueryClientProvider>
     </GoogleOAuthProvider>
   );
 }

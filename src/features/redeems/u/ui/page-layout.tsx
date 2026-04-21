@@ -43,6 +43,7 @@ type RedeemRow = {
   amount: string;
   currency?: string;
   method?: string;
+  destination?: string;
 
   status: string;
   admin_note?: string | null;
@@ -205,11 +206,13 @@ export default function RedeemsLayout() {
   const [requestForm, setRequestForm] = useState<{
     payment_method: PaymentMethod | "";
     amount: string;
+    destination: string;
     game_id: string;
     game_name?: string;
   }>({
     payment_method: "",
     amount: "",
+    destination: "",
     game_id: "",
     game_name: "",
   });
@@ -222,6 +225,7 @@ export default function RedeemsLayout() {
     const amt = Number(requestForm.amount);
     if (!Number.isFinite(amt) || amt <= 0) return alert("Enter a valid amount");
     if (!requestForm.payment_method) return alert("Select payment method");
+    if (!requestForm.destination.trim()) return alert("Enter wallet address");
     if (!requestForm.game_id) return alert("Select platform");
 
     createWithdrawl(
@@ -229,6 +233,7 @@ export default function RedeemsLayout() {
         user_id: query.user_id!,
         method: requestForm.payment_method,
         amount: requestForm.amount,
+        destination: requestForm.destination.trim(),
         game_id: requestForm.game_id,
         game_name: requestForm.game_name,
       },
@@ -241,6 +246,7 @@ export default function RedeemsLayout() {
           setRequestForm({
             payment_method: "",
             amount: "",
+            destination: "",
             game_id: "",
             game_name: "",
           });
@@ -269,6 +275,7 @@ export default function RedeemsLayout() {
       amount: String(w.amount ?? "0"),
       currency: w.currency ?? "USD",
       method: w.method ?? w.payment_method ?? "-",
+      destination: w.destination ?? w.address ?? "-",
 
       status: String(w.status ?? "requested"),
       admin_note: w.admin_note ?? null,
@@ -347,6 +354,7 @@ export default function RedeemsLayout() {
           r.amount,
           r.currency,
           r.method,
+          r.destination ?? "",
           r.status,
           r.game_name,
           r.game_id ?? "",
@@ -748,6 +756,11 @@ export default function RedeemsLayout() {
             render: (row) => row.method ?? "-",
           },
           {
+            key: "destination",
+            title: "Wallet Address",
+            render: (row) => row.destination ?? "-",
+          },
+          {
             key: "status",
             title: "Status",
             render: (row) => (
@@ -817,6 +830,18 @@ export default function RedeemsLayout() {
                   </option>
                 ))}
               </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Wallet Address</Label>
+              <Input
+                value={requestForm.destination}
+                disabled={isSubmitting}
+                onChange={(e) =>
+                  setRequestForm((p) => ({ ...p, destination: e.target.value }))
+                }
+                placeholder="Enter payout wallet address"
+              />
             </div>
 
             <div className="space-y-2">

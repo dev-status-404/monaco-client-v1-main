@@ -31,6 +31,7 @@ type RedeemRow = {
   amount: string;
   currency?: string;
   method?: string;
+  destination?: string;
 
   status: string;
   admin_note?: string | null;
@@ -143,6 +144,7 @@ export function WithdrawlActionsForm(
   const [amount, setAmount] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [method, setMethod] = useState<PaymentMethod>("manual");
+  const [destination, setDestination] = useState("");
   const [gameId, setGameId] = useState("");
   const [gameName, setGameName] = useState("");
 
@@ -169,6 +171,8 @@ export function WithdrawlActionsForm(
         ? m
         : "manual") as PaymentMethod,
     );
+
+    setDestination(safeText((r as any)?.destination) || safeText((r as any)?.address) || "");
 
     setGameId(safeText(r?.game_id) || safeText(r?.game?.id) || "");
     setGameName(safeText(r?.game_name) || safeText(r?.game?.name) || "");
@@ -229,12 +233,14 @@ export function WithdrawlActionsForm(
     if (allowStatusEdit) payload.status = status;
     payload.admin_note = adminNote;
     payload.reviewed_by_admin_id = id || ""; // or set to current admin id if you have that context
+    payload.destination = destination;
 
     // optional editable fields (only if readOnly === false)
     if (canEdit) {
       payload.amount = amount;
       payload.currency = currency;
       payload.method = method;
+      payload.destination = destination;
       payload.game_id = gameId;
       payload.game_name = gameName;
       payload.reviewed_by_admin_id = id || ""; // or set to current admin id if you have that context
@@ -355,6 +361,19 @@ export function WithdrawlActionsForm(
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="space-y-1 col-span-2">
+          <Label className="flex items-center gap-2">
+            <Wallet className="h-4 w-4" /> Wallet Address
+          </Label>
+          <Input
+            value={destination}
+            disabled={!canEdit || isSubmitting}
+            onChange={(e) => setDestination(e.target.value)}
+            placeholder="Payout address"
+            className="bg-card"
+          />
         </div>
 
         <div className="space-y-1 col-span-2">

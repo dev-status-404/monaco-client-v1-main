@@ -14,6 +14,7 @@ import {
   User,
   Users2,
   ArrowLeftRightIcon,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUserInfo } from "@/helpers/use-user";
@@ -22,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { logoutUser } from "@/redux/slices/user";
 import { useRouter } from "next/navigation";
 import LOGO from "../../../../public/assets/SVGs/luke/hat.png";
+import { useNotificationsSummary } from "@/hooks/notifications";
 
 type NavItem = {
   href: string;
@@ -36,6 +38,8 @@ const AppHeader = () => {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const isAdmin = role === "admin";
+  const { data: notificationsSummary } = useNotificationsSummary(id as string);
+  const unreadCount = Number(notificationsSummary?.data?.unreadCount || 0);
 
   const NAV: NavItem[] = isAdmin
     ? [
@@ -64,6 +68,12 @@ const AppHeader = () => {
           label: "Platform Requests",
           icon: <ArrowLeftRightIcon className="h-4 w-4" />,
         },
+        {
+          href: isAdmin ? "/notifications/a/" + id : "/notifications/u/" + id,
+          label: "Notifications",
+          icon: <Bell className="h-4 w-4" />,
+          badge: unreadCount > 0 ? String(unreadCount) : undefined,
+        },
       ]
     : [
         {
@@ -85,6 +95,12 @@ const AppHeader = () => {
           href: isAdmin ? "/redeems/a/" + id : "/redeems/u/" + id,
           label: "Redeems",
           icon: <Banknote className="h-4 w-4" />,
+        },
+        {
+          href: isAdmin ? "/notifications/a/" + id : "/notifications/u/" + id,
+          label: "Notifications",
+          icon: <Bell className="h-4 w-4" />,
+          badge: unreadCount > 0 ? String(unreadCount) : undefined,
         },
         // { href: "/rewards", label: "My Rewards", icon: <Gift className="h-4 w-4" /> },
       ];
@@ -151,16 +167,34 @@ const AppHeader = () => {
           </nav>
 
           {/* Right: Profile */}
-          <Link
-            href={isAdmin ? "/profile/" + id : "/profile/" + id}
-            className={cn(
-              "flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition",
-              "bg-white/20 hover:bg-white/30 text-black/85 hover:text-black",
-            )}
-          >
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Profile</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={isAdmin ? "/notifications/a/" + id : "/notifications/u/" + id}
+              className={cn(
+                "relative flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition",
+                "bg-white/20 hover:bg-white/30 text-black/85 hover:text-black",
+              )}
+            >
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Alerts</span>
+              {unreadCount > 0 ? (
+                <span className="absolute -top-2 -right-2 min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              ) : null}
+            </Link>
+
+            <Link
+              href={isAdmin ? "/profile/" + id : "/profile/" + id}
+              className={cn(
+                "flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition",
+                "bg-white/20 hover:bg-white/30 text-black/85 hover:text-black",
+              )}
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Profile</span>
+            </Link>
+          </div>
           <Button
             className="rounded-2xl px-4 py-2 text-sm"
             variant={"destructive"}

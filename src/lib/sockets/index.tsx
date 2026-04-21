@@ -1,5 +1,9 @@
 // client/src/lib/socket/index.ts
 import { io } from "socket.io-client";
+import type { Socket } from "socket.io-client";
+
+let socketInstance: Socket | null = null;
+let boundUserId = "";
 
 export function getSocket(userId?: string) {
   if (typeof window === "undefined") return null;
@@ -7,20 +11,26 @@ export function getSocket(userId?: string) {
   const url = process.env.NEXT_PUBLIC_WS_URL!; // http://localhost:8080
   const path = process.env.NEXT_PUBLIC_WS_PATH || "/socket.io";
 
-  console.log("[socket] will connect", { url, path, userId });
+  if (!socketInstance) {
+    socketInstance = io(url, {
+      path,
+      withCredentials: true,
+      transports: ["websocket"],
+      autoConnect: false,
+      query: userId ? { userId } : undefined,
+      timeout: 10000,
+    });
 
-  const socket = io(url, {
-    path,
-    withCredentials: true,
-    // 👇 allow polling while we debug the WS upgrade
-    transports: ["websocket"],
-    autoConnect: true,
-    query: userId ? { userId } : undefined,
-    timeout: 10000,
-  });
+    socketInstance.on("connect_error", (e) => {
+      console.error("connect_error:", e?.message ?? e);
+    });
+  }
 
-  socket.on("connect_error", (e) =>
-    console.error("connect_error:", e?.message ?? e)
-  );
-  return socket;
+  const nextUserId = String(userId || "");
+  if (nextUserId && nextUserId !== boundUserId) {
+    boundUserId = nextUserId;
+    socketInstance.io.opts.query = { userId: boundUserId };
+  }
+
+  return socketInstance;
 }

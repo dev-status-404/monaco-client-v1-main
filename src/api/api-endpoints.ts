@@ -73,6 +73,16 @@ export const apiEndpoints = {
     getAll: (params: any) => withPagination("/dashboard/get", params),
   },
 
+  wallet: {
+    deposit: "/wallet/deposit",
+    withdraw: "/wallet/withdraw",
+    balance: (userId: string) => `/wallet/balance/${userId}`,
+    transactions: (userId: string, params: any) =>
+      withPagination(`/wallet/transactions/${userId}`, params),
+    transaction: (userId: string, txId: string) =>
+      `/wallet/transaction/${userId}/${txId}`,
+  },
+
   withdrawal: {
     getAll: (params: any) => withPagination("/withdrawal-requests/get", params),
     create: "/withdrawal-requests/create",
@@ -94,5 +104,14 @@ export const apiEndpoints = {
     update: (id: string | number) => `/game-creds/update/${id}`,
     delete: (id: string | number) => `/game-creds/delete/${id}`,
     assign: "/game-creds/assign",
+  },
+
+  notifications: {
+    getAll: (params: any) => withPagination("/notifications/get", params),
+    summary: (user_id: string) => `/notifications/summary?user_id=${user_id}`,
+    readAll: "/notifications/read-all",
+    readOne: (id: string | number) => `/notifications/read/${id}`,
+    deleteAll: "/notifications/delete-all",
+    deleteOne: (id: string | number) => `/notifications/delete/${id}`,
   },
 };
