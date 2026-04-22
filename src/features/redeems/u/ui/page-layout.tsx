@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import SectionTitle from "@/components/common/section-title";
 import { GlobalDataTable } from "@/components/common/global-table";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import { useGames } from "@/hooks/games";
 
-type PaymentMethod = "coin-flow" | "manual" | "paypal" | "bank";
+type PaymentMethod = "pointsmate";
 
 type RedeemRow = {
   id: string;
@@ -89,10 +89,7 @@ function statusVariant(status?: string) {
 }
 
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "coin-flow", label: "Coin-Flow" },
-  { value: "manual", label: "Manual" },
-  { value: "paypal", label: "PayPal" },
-  { value: "bank", label: "Bank Transfer" },
+  { value: "pointsmate", label: "Pointsmate" },
 ];
 
 const STATUS_OPTIONS: { value: RedeemStatus; label: string }[] = [
@@ -120,7 +117,7 @@ const DATE_OPTIONS: {
 
 const METHOD_FILTERS: { value: "all" | PaymentMethod; label: string }[] = [
   { value: "all", label: "All methods" },
-  ...PAYMENT_METHODS.map((m) => ({ value: m.value, label: m.label })),
+  { value: "pointsmate", label: "Pointsmate" },
 ];
 
 function startOfDayISO(d: Date) {
@@ -134,8 +131,8 @@ function formatMoney(amount: string, currency = "USD") {
   if (!Number.isFinite(n)) return amount;
   try {
     return new Intl.NumberFormat(undefined, {
-      style: "currency",
       currency,
+      style: "currency",
       maximumFractionDigits: 2,
     }).format(n);
   } catch {
@@ -154,7 +151,8 @@ function isPendingStatus(s?: string) {
 
 export default function RedeemsLayout() {
   const queryClient = useQueryClient();
-  const { id } = useUserInfo();
+  const { id, role } = useUserInfo() as any;
+  const isAdmin = String(role ?? "").toLowerCase() === "admin";
   const { data: gamesData } = useGames({ limit: 200 });
 
   const games = useMemo(() => {
@@ -185,8 +183,15 @@ export default function RedeemsLayout() {
     status: undefined as string | undefined,
     method: undefined as string | undefined,
     game_id: undefined as string | undefined,
-    user_id: id as string,
+    user_id: isAdmin ? undefined : (id as string | undefined),
   });
+
+  useEffect(() => {
+    setQuery((prev) => ({
+      ...prev,
+      user_id: isAdmin ? undefined : (id as string | undefined),
+    }));
+  }, [id, isAdmin]);
 
   const { data, isLoading } = useWithdrawls(query);
 
@@ -210,7 +215,7 @@ export default function RedeemsLayout() {
     game_id: string;
     game_name?: string;
   }>({
-    payment_method: "",
+    payment_method: "pointsmate",
     amount: "",
     destination: "",
     game_id: "",
@@ -224,7 +229,6 @@ export default function RedeemsLayout() {
 
     const amt = Number(requestForm.amount);
     if (!Number.isFinite(amt) || amt <= 0) return alert("Enter a valid amount");
-    if (!requestForm.payment_method) return alert("Select payment method");
     if (!requestForm.destination.trim()) return alert("Enter wallet address");
     if (!requestForm.game_id) return alert("Select platform");
 
@@ -244,7 +248,7 @@ export default function RedeemsLayout() {
 
           setOpen(false);
           setRequestForm({
-            payment_method: "",
+            payment_method: "pointsmate",
             amount: "",
             destination: "",
             game_id: "",
@@ -252,12 +256,46 @@ export default function RedeemsLayout() {
           });
         },
         onError: (err: any) => {
+          const validationDetails = err?.response?.data?.errors;
+          const firstValidationMessage = Array.isArray(validationDetails)
+            ? Object.values(validationDetails[0] || {})?.[0]
+            : null;
+
           alert(
+            firstValidationMessage ||
+              err?.response?.data?.error?.message ||
             err?.response?.data?.message || err?.message || "Request failed",
           );
         },
       },
     );
+  };
+
+  const handleApproveWithdrawal = async (row: RedeemRow) => {
+    if (!id) {
+      alert("Admin user not found");
+      return;
+    }
+
+    try {
+      await withdrawlActions.updateWithdrawl({
+        id: row.id,
+        status: "approved",
+        reviewed_by_admin_id: id,
+        admin_note: row.admin_note || "Approved by admin",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
+      queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
+      alert("Withdrawal approved and payout released.");
+    } catch (err: any) {
+      alert(
+        err?.response?.data?.error?.message ||
+          err?.response?.data?.message ||
+          err?.message ||
+          "Approval failed",
+      );
+    }
   };
 
   const rowsRaw: RedeemRow[] = useMemo(() => {
@@ -512,10 +550,12 @@ export default function RedeemsLayout() {
             Refresh
           </Button>
 
-          <Button className="rounded-2xl" onClick={() => setOpen(true)}>
-            <Plus className="mr-2 size-4" />
-            Request Redeem
-          </Button>
+          {!isAdmin && (
+            <Button className="rounded-2xl" onClick={() => setOpen(true)}>
+              <Plus className="mr-2 size-4" />
+              Request Redeem
+            </Button>
+          )}
         </div>
       </div>
 
@@ -782,105 +822,128 @@ export default function RedeemsLayout() {
             title: "Date",
             render: (row) => new Date(row.createdAt).toLocaleString(),
           },
+          {
+            key: "approve_action",
+            title: "Approve",
+            render: (row) => {
+              const canApprove =
+                isAdmin &&
+                ["requested", "pending", "processing"].includes(
+                  String(row.status ?? "").toLowerCase(),
+                );
+
+              if (!canApprove) return "-";
+
+              return (
+                <Button
+                  size="sm"
+                  className="rounded-xl"
+                  onClick={() => handleApproveWithdrawal(row)}
+                >
+                  Approve
+                </Button>
+              );
+            },
+          },
         ]}
         data={filteredRows}
-        showActions={false}
+        showActions={isAdmin}
+        actions={
+          isAdmin
+            ? [
+                {
+                  key: "approve-withdrawal",
+                  label: "Approve & Release",
+                  onClick: handleApproveWithdrawal,
+                  visible: (row) =>
+                    ["requested", "pending", "processing"].includes(
+                      String(row.status ?? "").toLowerCase(),
+                    ),
+                },
+              ]
+            : []
+        }
       />
 
       {/* Modal */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-border bg-card text-foreground">
-          <DialogHeader>
-            <DialogTitle>Request Redeem</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Select your payment method and submit a redeem request.
-            </DialogDescription>
-          </DialogHeader>
+      {!isAdmin && (
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="border-border bg-card text-foreground">
+            <DialogHeader>
+              <DialogTitle>Request Redeem</DialogTitle>
+              <DialogDescription className="text-muted-foreground">
+                Select your payment method and submit a redeem request.
+              </DialogDescription>
+            </DialogHeader>
 
-          <form onSubmit={submitRequest} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Amount</Label>
-              <Input
-                value={requestForm.amount}
-                disabled={isSubmitting}
-                onChange={(e) =>
-                  setRequestForm((p) => ({ ...p, amount: e.target.value }))
-                }
-                placeholder="e.g. 100.00"
-              />
-            </div>
+            <form onSubmit={submitRequest} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Amount</Label>
+                <Input
+                  value={requestForm.amount}
+                  disabled={isSubmitting}
+                  onChange={(e) =>
+                    setRequestForm((p) => ({ ...p, amount: e.target.value }))
+                  }
+                  placeholder="e.g. 100.00"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Payment Method</Label>
-              <select
-                value={requestForm.payment_method}
-                disabled={isSubmitting}
-                onChange={(e) =>
-                  setRequestForm((p) => ({
-                    ...p,
-                    payment_method: e.target.value as PaymentMethod,
-                  }))
-                }
-                className="h-10 w-full rounded-2xl border border-border bg-background px-3 outline-none disabled:opacity-60"
-              >
-                <option value="">Select method</option>
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+              <div className="space-y-2">
+                <Label>Payment Method</Label>
+                <Input value="Pointsmate" disabled />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Wallet Address</Label>
-              <Input
-                value={requestForm.destination}
-                disabled={isSubmitting}
-                onChange={(e) =>
-                  setRequestForm((p) => ({ ...p, destination: e.target.value }))
-                }
-                placeholder="Enter payout wallet address"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>Wallet Address</Label>
+                <Input
+                  value={requestForm.destination}
+                  disabled={isSubmitting}
+                  onChange={(e) =>
+                    setRequestForm((p) => ({ ...p, destination: e.target.value }))
+                  }
+                  placeholder="Enter payout wallet address"
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label>Select Platform</Label>
-              <GamesSelect
-                value={requestForm.game_id}
-                disabled={isSubmitting}
-                onChange={(game: GameOption | null) =>
-                  setRequestForm((p) => ({
-                    ...p,
-                    game_id: game?.id ?? "",
-                    game_name: game?.name ?? "",
-                  }))
-                }
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>Select Platform</Label>
+                <GamesSelect
+                  value={requestForm.game_id}
+                  disabled={isSubmitting}
+                  onChange={(game: GameOption | null) =>
+                    setRequestForm((p) => ({
+                      ...p,
+                      game_id: game?.id ?? "",
+                      game_name: game?.name ?? "",
+                    }))
+                  }
+                />
+              </div>
 
-            <DialogFooter className="gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="rounded-2xl"
-                onClick={() => setOpen(false)}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+              <DialogFooter className="gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="rounded-2xl"
+                  onClick={() => setOpen(false)}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
 
-              <Button
-                type="submit"
-                className="rounded-2xl"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Submitting..." : "Submit"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+                <Button
+                  type="submit"
+                  className="rounded-2xl"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

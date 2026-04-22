@@ -76,6 +76,7 @@ export const apiEndpoints = {
   wallet: {
     deposit: "/wallet/deposit",
     withdraw: "/wallet/withdraw",
+    approveWithdraw: "/wallet/withdraw/approve",
     balance: (userId: string) => `/wallet/balance/${userId}`,
     transactions: (userId: string, params: any) =>
       withPagination(`/wallet/transactions/${userId}`, params),
@@ -86,6 +87,7 @@ export const apiEndpoints = {
   withdrawal: {
     getAll: (params: any) => withPagination("/withdrawal-requests/get", params),
     create: "/withdrawal-requests/create",
+    approve: "/withdrawal-requests/approve",
     update: `/withdrawal-requests/update`,
     delete: (id: string | number) => `/withdrawal-requests/delete/${id}`,
     bulkDelete: `/withdrawal-requests/bulk-delete`,

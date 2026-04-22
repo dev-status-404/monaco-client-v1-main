@@ -36,6 +36,15 @@ export const useWithdrawlActions = () => {
     deleteWithdrawl: deleteMutation.mutateAsync,
     updateWithdrawl: updateMutation.mutateAsync,
     bulkDeleteWithdrawl: bulkDeleteMutation.mutateAsync,
-    isLoading: createMutation.isPending || deleteMutation.isPending,
+    isPending:
+      createMutation.isPending ||
+      updateMutation.isPending ||
+      deleteMutation.isPending ||
+      bulkDeleteMutation.isPending,
+    isLoading:
+      createMutation.isPending ||
+      updateMutation.isPending ||
+      deleteMutation.isPending ||
+      bulkDeleteMutation.isPending,
   };
 };
