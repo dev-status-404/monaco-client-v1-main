@@ -264,7 +264,9 @@ export default function RedeemsLayout() {
           alert(
             firstValidationMessage ||
               err?.response?.data?.error?.message ||
-            err?.response?.data?.message || err?.message || "Request failed",
+              err?.response?.data?.message ||
+              err?.message ||
+              "Request failed",
           );
         },
       },
@@ -285,7 +287,8 @@ export default function RedeemsLayout() {
         status: "approved",
         reviewed_by_admin_id: id,
         admin_note: row.admin_note || "Approved by admin",
-        destination: destination && destination !== "-" ? destination : undefined,
+        destination:
+          destination && destination !== "-" ? destination : undefined,
         address: destination && destination !== "-" ? destination : undefined,
       });
 
@@ -904,7 +907,10 @@ export default function RedeemsLayout() {
                   value={requestForm.destination}
                   disabled={isSubmitting}
                   onChange={(e) =>
-                    setRequestForm((p) => ({ ...p, destination: e.target.value }))
+                    setRequestForm((p) => ({
+                      ...p,
+                      destination: e.target.value,
+                    }))
                   }
                   placeholder="Enter payout wallet address"
                 />

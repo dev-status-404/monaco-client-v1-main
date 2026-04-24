@@ -4,9 +4,7 @@ import api from "@/api/axios"; // Aapka custom axios instance
 export const withdrawlsApi = {
   // Backend service ke pagination logic ke mutabiq
   getWithdrawls: async (params: any) => {
-    const response = await api.get(
-      apiEndpoints.withdrawal.getAll(params),
-    );
+    const response = await api.get(apiEndpoints.withdrawal.getAll(params));
     return response.data;
   },
 
@@ -51,20 +49,27 @@ export const withdrawlsApi = {
     if (nextStatus === "approved") {
       const approvePayload = {
         id: data?.id,
-        reviewedByAdminId: data?.reviewedByAdminId ?? data?.reviewed_by_admin_id,
+        reviewedByAdminId:
+          data?.reviewedByAdminId ?? data?.reviewed_by_admin_id,
         adminNote: data?.adminNote ?? data?.admin_note,
         destination: destinationForApprove,
         address: destinationForApprove,
       };
 
       try {
-        response = await api.post(apiEndpoints.withdrawal.approve, approvePayload);
+        response = await api.post(
+          apiEndpoints.withdrawal.approve,
+          approvePayload,
+        );
       } catch (primaryError: any) {
         const code = Number(primaryError?.response?.status || 0);
 
         if (code === 404 || code === 405) {
           try {
-            response = await api.post(apiEndpoints.wallet.approveWithdraw, approvePayload);
+            response = await api.post(
+              apiEndpoints.wallet.approveWithdraw,
+              approvePayload,
+            );
           } catch (secondaryError: any) {
             const secondaryCode = Number(secondaryError?.response?.status || 0);
 
