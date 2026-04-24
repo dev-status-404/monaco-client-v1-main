@@ -38,6 +38,13 @@ export const withdrawlsApi = {
 
   updateWithdrawls: async (data: any) => {
     const nextStatus = String(data?.status ?? "").toLowerCase();
+    const normalizedDestination = String(
+      data?.destination ?? data?.address ?? "",
+    ).trim();
+    const destinationForApprove =
+      normalizedDestination && normalizedDestination !== "-"
+        ? normalizedDestination
+        : undefined;
 
     let response;
 
@@ -46,6 +53,8 @@ export const withdrawlsApi = {
         id: data?.id,
         reviewedByAdminId: data?.reviewedByAdminId ?? data?.reviewed_by_admin_id,
         adminNote: data?.adminNote ?? data?.admin_note,
+        destination: destinationForApprove,
+        address: destinationForApprove,
       };
 
       try {
@@ -66,6 +75,8 @@ export const withdrawlsApi = {
                 reviewed_by_admin_id:
                   data?.reviewedByAdminId ?? data?.reviewed_by_admin_id,
                 admin_note: data?.adminNote ?? data?.admin_note,
+                destination: destinationForApprove,
+                address: destinationForApprove,
               });
             } else {
               throw secondaryError;

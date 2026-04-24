@@ -278,11 +278,15 @@ export default function RedeemsLayout() {
     }
 
     try {
+      const destination = String(row.destination ?? "").trim();
+
       await withdrawlActions.updateWithdrawl({
         id: row.id,
         status: "approved",
         reviewed_by_admin_id: id,
         admin_note: row.admin_note || "Approved by admin",
+        destination: destination && destination !== "-" ? destination : undefined,
+        address: destination && destination !== "-" ? destination : undefined,
       });
 
       queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
@@ -313,7 +317,7 @@ export default function RedeemsLayout() {
       amount: String(w.amount ?? "0"),
       currency: w.currency ?? "USD",
       method: w.method ?? w.payment_method ?? "-",
-      destination: w.destination ?? w.address ?? "-",
+      destination: w.destination ?? w.address ?? "",
 
       status: String(w.status ?? "requested"),
       admin_note: w.admin_note ?? null,
