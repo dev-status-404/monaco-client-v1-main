@@ -21,7 +21,6 @@ export const withdrawlsApi = {
     const response = await api.post(apiEndpoints.wallet.withdraw, {
       userId: normalizedUserId,
       amount: data?.amount,
-      amountSats: data?.amountSats,
       address: normalizedDestination,
       destination: normalizedDestination,
       method: "pointsmate",
