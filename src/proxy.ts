@@ -12,7 +12,10 @@ const PUBLIC_ROUTES = [
   "/auth/reset-password/",
   "/plans",
   "/",
+  "/contact",
   "/privacy",
+  "/responsible-play-policy",
+  "/tos",
 ];
 
 // URL patterns we never run auth logic for (assets, files, etc.)

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Mail, MessageSquare, Send, MapPin, Phone } from "lucide-react";
+import { Globe, Mail, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ContactSection() {
@@ -80,12 +80,18 @@ export default function ContactSection() {
               </div>
               <div>
                 <h3 className="font-semibold text-lg mb-1">Email Us</h3>
-                <p className="text-sm text-muted-foreground">
+                <a
+                  href="mailto:support@monacogameroom.com"
+                  className="block text-sm text-muted-foreground transition hover:text-primary"
+                >
                   support@monacogameroom.com
-                </p>
-                <p className="text-sm text-muted-foreground">
+                </a>
+                <a
+                  href="mailto:contact@monacogameroom.com"
+                  className="block text-sm text-muted-foreground transition hover:text-primary"
+                >
                   contact@monacogameroom.com
-                </p>
+                </a>
               </div>
             </div>
 
@@ -103,14 +109,18 @@ export default function ContactSection() {
 
             <div className="flex items-start gap-4 group">
               <div className="mt-1 p-4 rounded-2xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                <MapPin className="h-6 w-6 text-primary" />
+                <Globe className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold text-lg mb-1">Visit Us</h3>
-                <p className="text-sm text-muted-foreground">
-                  30N Gould St Ste R<br />
-                  Sheridan, WY 82801
-                </p>
+                <h3 className="font-semibold text-lg mb-1">Website</h3>
+                <a
+                  href="https://monacogameroom.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-muted-foreground transition hover:text-primary"
+                >
+                  https://monacogameroom.com
+                </a>
               </div>
             </div>
           </div>

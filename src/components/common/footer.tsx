@@ -1,172 +1,212 @@
 "use client";
 
 import Image from "next/image";
-import { cn } from "@/lib/utils";
-import {
-  ChevronDown,
-  Mail,
-  MessageSquare,
-  Phone,
-  Handshake,
-} from "lucide-react";
-
-const leftLinks = [
-  "Contact Hub",
-  "Affiliates",
-  "AML/CTF Policy",
-  "Responsible Gaming",
-];
-const rightLinks = [
-  // "Promo Rules",
-  "Privacy Policy",
-  "Terms & Conditions",
-  // "Help Center",
-];
+import Link from "next/link";
+import { Clock, Mail, MessageCircle, ShoppingCart } from "lucide-react";
 
 import LOGO from "../../../public/assets/SVGs/luke/hat.png";
+import facebook from "../../../public/assets/SVGs/facebook.svg";
+import instagram from "../../../public/assets/SVGs/instagram.svg";
+
+const aboutLinks = [
+  { label: "Privacy Policy", href: "/privacy" },
+  { label: "Terms and Conditions", href: "/tos" },
+  { label: "Responsible Play Policy", href: "/responsible-play-policy" },
+  { label: "Contact Hub", href: "/contact" },
+];
+
+const featureLinks = [
+  { label: "Casino", href: "/" },
+  { label: "Sweepstakes Games", href: "/" },
+  { label: "VIP Rewards", href: "/" },
+  { label: "Refer a Friend", href: "/auth/signup" },
+];
+
+const socialLinks = [
+  { label: "Facebook", href: "#", icon: facebook },
+  { label: "Instagram", href: "#", icon: instagram },
+];
 
 export default function Footer() {
   return (
-    <footer className="relative mt-16 pb-16">
-      {/* subtle top separator like screenshot */}
-      <div className="pointer-events-none absolute left-0 right-0 top-0 h-px bg-border/60" />
-
-      <div className="grid gap-16 pt-14 md:grid-cols-[1fr_1.6fr]">
-        {/* LEFT COLUMN */}
-        <div className="space-y-10">
-          {/* Logo */}
-          <div className="flex items-start gap-4">
-            {/* Replace with your real logo file */}
-            <div className="relative h-16 w-24">
-              {/* If you have your logo, put it in public/images/brand/logo.png */}
+    <footer className="relative mt-16 overflow-hidden border-t border-border bg-card/90 text-card-foreground shadow-[0_-1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl">
+      <div className="grid gap-10 px-5 py-14 sm:px-8 lg:grid-cols-[1.15fr_1fr_1fr_1.25fr_1.25fr] lg:gap-14 xl:px-10">
+        <section className="space-y-6">
+          <Link href="/" className="block w-fit">
+            <div className="relative h-28 w-52">
               <Image
                 src={LOGO}
-                alt="UCSWEEPS"
+                alt="Monaco Gameroom"
                 fill
-                className="object-contain rounded-full"
+                className="object-contain"
                 priority={false}
               />
             </div>
-          </div>
+          </Link>
 
-          {/* Contact list */}
-          <div className="space-y-4 text-base">
-            {/* <Row icon={<Phone className="h-6 w-6" />} label="Phone :" value="123 456 789" /> */}
-            <Row
-              icon={<MessageSquare className="h-6 w-6" />}
-              label="Live Support"
-            />
-            <Row
-              icon={<Mail className="h-6 w-6" />}
-              label="Support :"
-              value="support@monacogameroom.com"
-            />
-            <Row
-              icon={<Handshake className="h-6 w-6" />}
-              label="Contact :"
-              value="contact@monacogameroom.com"
-            />
-          </div>
+          <p className="max-w-xs text-lg font-medium leading-relaxed text-muted-foreground">
+            Your premier destination for sweepstakes casino entertainment. Play
+            top games and win real prizes.
+          </p>
 
-          {/* Contact Hub Link */}
-          <div className="pt-2">
-            <a
-              href="/contact"
-              className="inline-flex items-center gap-2 text-lg font-semibold text-primary hover:text-primary/80 transition"
-            >
-              <MessageSquare className="h-5 w-5" />
-              Contact Hub
-            </a>
-          </div>
-
-          {/* Left links */}
-          {/* <div className="space-y-5 pt-2">
-            {leftLinks.map((t) => (
-              <a
-                key={t}
-                href="#"
-                className="block text-lg font-semibold text-foreground/90 hover:text-foreground transition"
-              >
-                {t}
-              </a>
-            ))}
-          </div> */}
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div className="space-y-12">
-          {/* Accordion-like rows */}
-          <div className="space-y-8">
-            <div className="border-b border-border/60 pb-6">
-              <div className="flex items-center justify-between">
-                <p className="text-4xl font-semibold tracking-tight text-foreground">
-                  About us
-                </p>
-                <ChevronDown className="h-7 w-7 text-foreground/80" />
-              </div>
-            </div>
-
-            <a
-              href="/contact"
-              className="block border-b border-border/60 pb-6 cursor-pointer hover:opacity-80 transition"
-            >
-              <div className="flex items-center justify-between">
-                <p className="text-4xl font-semibold tracking-tight text-foreground">
-                  Give us a feedback
-                </p>
-                <Mail className="h-7 w-7 text-foreground/80" />
-              </div>
-            </a>
-          </div>
-
-          {/* Right links */}
-          <div className="space-y-4 pt-2">
-            {rightLinks.map((t) => {
-              const href = t === "Privacy Policy" ? "/privacy" : "/tos";
-              return (
+          <div>
+            <h2 className="text-lg font-extrabold uppercase tracking-wide text-primary">
+              Social Media
+            </h2>
+            <div className="mt-4 flex items-center gap-4">
+              {socialLinks.map((link) => (
                 <a
-                  key={t}
-                  href={href}
-                  className="block text-lg font-semibold text-foreground/90 hover:text-foreground transition"
+                  key={link.label}
+                  href={link.href}
+                  aria-label={link.label}
+                  className="grid h-12 w-12 place-items-center rounded-full transition hover:scale-105"
                 >
-                  {t}
+                  <Image
+                    src={link.icon}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-12 w-12 object-contain"
+                  />
                 </a>
-              );
-            })}
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
+
+        <FooterColumn title="About Monaco Gameroom" links={aboutLinks} />
+        <FooterColumn title="Features" links={featureLinks} />
+
+        <section>
+          <h2 className="text-lg font-extrabold uppercase tracking-wide text-primary">
+            Contact Us
+          </h2>
+          <div className="mt-6 space-y-5 text-lg font-medium text-muted-foreground">
+            <ContactRow
+              icon={<Mail className="h-6 w-6" />}
+              text="support@monacogameroom.com"
+              href="mailto:support@monacogameroom.com"
+            />
+            <ContactRow
+              icon={<Mail className="h-6 w-6" />}
+              text="contact@monacogameroom.com"
+              href="mailto:contact@monacogameroom.com"
+            />
+            <ContactRow
+              icon={<Clock className="h-6 w-6" />}
+              text="24/7 Live Support"
+            />
+            <ContactRow
+              icon={<MessageCircle className="h-6 w-6" />}
+              text="Contact Hub"
+              href="/contact"
+            />
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-extrabold uppercase tracking-wide text-primary">
+            How It Works
+          </h2>
+          <div className="mt-6 space-y-7">
+            <HowItWorksItem
+              icon={
+                <span className="grid h-16 w-16 place-items-center rounded-full border-4 border-primary bg-background text-2xl font-black text-foreground shadow-[0_0_0_2px_rgba(255,255,255,0.12)]">
+                  21+
+                </span>
+              }
+              text="Must be 21+ to play where required."
+            />
+            <HowItWorksItem
+              icon={
+                <span className="relative grid h-16 w-16 place-items-center rounded-full border-4 border-destructive bg-background text-foreground">
+                  <ShoppingCart className="h-8 w-8" />
+                  <span className="absolute h-1 w-16 rotate-[-35deg] rounded-full bg-red-500" />
+                </span>
+              }
+              text="No purchase necessary."
+            />
+          </div>
+        </section>
       </div>
 
-      {/* bottom thin line like screenshot */}
-      <div className="mt-14 h-px bg-border/60" />
+      <div className="border-t border-border bg-background/80 px-5 py-6 text-center text-base font-bold text-foreground sm:text-lg">
+        <span className="mr-2 inline-grid h-7 w-7 place-items-center rounded-full bg-primary text-sm font-black text-primary-foreground">
+          MG
+        </span>
+        &copy; 2026 Monaco Gameroom All Rights Reserved.
+      </div>
     </footer>
   );
 }
 
-function Row({
-  icon,
-  label,
-  value,
+function FooterColumn({
+  title,
+  links,
 }: {
-  icon: React.ReactNode;
-  label: string;
-  value?: string;
+  title: string;
+  links: { label: string; href: string }[];
 }) {
   return (
-    <div className="flex items-center gap-4 text-foreground/90">
-      <div className="grid h-10 w-10 place-items-center rounded-xl bg-muted/25 border border-border">
-        {icon}
-      </div>
-      <div className="text-lg font-semibold">
-        {value ? (
-          <>
-            <span className="font-semibold">{label}</span>{" "}
-            <span className="text-foreground/85">{value}</span>
-          </>
-        ) : (
-          <span>{label}</span>
-        )}
-      </div>
+    <section>
+      <h2 className="max-w-52 text-lg font-extrabold uppercase tracking-wide text-primary">
+        {title}
+      </h2>
+      <nav className="mt-6 space-y-5">
+        {links.map((link) => (
+          <Link
+            key={link.label}
+            href={link.href}
+            className="block text-lg font-medium text-muted-foreground transition hover:text-primary"
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
+    </section>
+  );
+}
+
+function ContactRow({
+  icon,
+  text,
+  href,
+}: {
+  icon: React.ReactNode;
+  text: string;
+  href?: string;
+}) {
+  const content = (
+    <>
+      <span className="shrink-0 text-primary">{icon}</span>
+      <span className="min-w-0 break-words">{text}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link href={href} className="flex items-start gap-4 transition hover:text-primary">
+        {content}
+      </Link>
+    );
+  }
+
+  return <div className="flex items-start gap-4">{content}</div>;
+}
+
+function HowItWorksItem({
+  icon,
+  text,
+}: {
+  icon: React.ReactNode;
+  text: string;
+}) {
+  return (
+    <div className="flex items-center gap-6">
+      <div className="shrink-0">{icon}</div>
+      <p className="text-base font-medium leading-relaxed text-muted-foreground">
+        {text}
+      </p>
     </div>
   );
 }

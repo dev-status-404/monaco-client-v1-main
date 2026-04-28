@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Mail, Phone, MapPin, Send } from "lucide-react";
+import { Globe, Mail, Phone, Send } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ContactPage() {
@@ -61,7 +61,8 @@ export default function ContactPage() {
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
         <p className="text-muted-foreground text-lg">
-          Have a question or need assistance? We're here to help!
+          Have a question or need assistance with Monaco Gameroom? We're here
+          to help.
         </p>
       </div>
 
@@ -84,25 +85,35 @@ export default function ContactPage() {
               </div>
               <div>
                 <h3 className="font-semibold mb-1">Email</h3>
-                <p className="text-sm text-muted-foreground">
-                  support@ucsweeps.com
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  contact@ucsweeps.com
-                </p>
+                <a
+                  href="mailto:support@monacogameroom.com"
+                  className="block text-sm text-muted-foreground transition hover:text-primary"
+                >
+                  support@monacogameroom.com
+                </a>
+                <a
+                  href="mailto:contact@monacogameroom.com"
+                  className="block text-sm text-muted-foreground transition hover:text-primary"
+                >
+                  contact@monacogameroom.com
+                </a>
               </div>
             </div>
 
             <div className="flex items-start gap-4">
               <div className="mt-1 p-3 rounded-full bg-primary/10">
-                <MapPin className="h-5 w-5 text-primary" />
+                <Globe className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <h3 className="font-semibold mb-1">Address</h3>
-                <p className="text-sm text-muted-foreground">
-                  30N Gould St Ste R<br />
-                  Sheridan, WY 82801
-                </p>
+                <h3 className="font-semibold mb-1">Website</h3>
+                <a
+                  href="https://monacogameroom.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-sm text-muted-foreground transition hover:text-primary"
+                >
+                  https://monacogameroom.com
+                </a>
               </div>
             </div>
 
@@ -120,15 +131,15 @@ export default function ContactPage() {
           </div>
 
           <div className="pt-6 border-t border-border/60">
-            <h3 className="font-semibold mb-3">Business Hours</h3>
+            <h3 className="font-semibold mb-3">Support Availability</h3>
             <div className="space-y-2 text-sm text-muted-foreground">
               <div className="flex justify-between">
-                <span>Monday - Friday:</span>
-                <span className="font-medium">9:00 AM - 6:00 PM EST</span>
+                <span>Live Support:</span>
+                <span className="font-medium">Available 24/7</span>
               </div>
               <div className="flex justify-between">
-                <span>Saturday - Sunday:</span>
-                <span className="font-medium">10:00 AM - 4:00 PM EST</span>
+                <span>Email Support:</span>
+                <span className="font-medium">support@monacogameroom.com</span>
               </div>
             </div>
           </div>
