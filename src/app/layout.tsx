@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/providers/theme/provider";
 import StoreProvider from "@/redux/store-provider";
 import { Toaster } from "sonner";
 import Script from "next/script";
+import { TawkChat } from "@/components/common/tawk-chat";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,6 +65,7 @@ export default function RootLayout({
           >
             {children}
             <Toaster />
+            <TawkChat />
           </ThemeProvider>
         </StoreProvider>
       </body>
