@@ -36,6 +36,8 @@ import {
   AlertTriangle,
   Hourglass,
   Link2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,6 +46,7 @@ type ReceiveType = "lightning" | "onchain";
 type DepositRow = {
   id: string;
   amount: string;
+  currency?: string;
   status: string;
   api_status?: string;
   createdAt: string;
@@ -92,6 +95,36 @@ const DATE_OPTIONS: {
 const clamp = (n: number, min: number, max: number) =>
   Math.max(min, Math.min(max, n));
 
+function truncateAddress(addr?: string | null): string {
+  if (!addr) return "-";
+  if (addr.length <= 16) return addr;
+  return `${addr.slice(0, 8)}...${addr.slice(-4)}`;
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      title="Copy full address"
+      className="ml-1 inline-flex items-center rounded p-0.5 text-slate-500 hover:text-slate-900 dark:text-white/40 dark:hover:text-white transition-colors"
+    >
+      {copied ? (
+        <Check className="size-3 text-emerald-500" />
+      ) : (
+        <Copy className="size-3" />
+      )}
+    </button>
+  );
+}
+
 function statusVariant(status?: string) {
   const s = String(status ?? "").toLowerCase();
   if (["completed", "confirmed"].includes(s)) return "success";
@@ -99,10 +132,18 @@ function statusVariant(status?: string) {
   return "destructive";
 }
 
-function formatAmount(amount: string) {
+function formatMoney(amount: string, currency = "USD") {
   const n = Number(amount);
   if (!Number.isFinite(n)) return amount;
-  return new Intl.NumberFormat().format(n);
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      maximumFractionDigits: 2,
+    }).format(n);
+  } catch {
+    return `$${n.toFixed(2)}`;
+  }
 }
 
 function isSuccessStatus(s?: string) {
@@ -194,6 +235,7 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
     return items.map((row: any) => ({
       id: row.id,
       amount: String(row.amount ?? "0"),
+      currency: row.currency ?? "USD",
       status: String(row.status ?? row.api_status ?? "pending"),
       api_status: row.api_status ?? row.apiStatus ?? "pending",
       createdAt: row.createdAt ?? new Date().toISOString(),
@@ -361,7 +403,7 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
             <BadgeCheck className="size-4 text-slate-500 dark:text-white/70" />
           </div>
           <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{stats.completedCount}</div>
-          <div className="mt-1 text-xs text-slate-600 dark:text-white/60">{formatAmount(String(stats.totalCompletedAmount))} total</div>
+          <div className="mt-1 text-xs text-slate-600 dark:text-white/60">{formatMoney(String(stats.totalCompletedAmount))} total</div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
@@ -386,7 +428,7 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
             <Wallet className="size-4 text-slate-500 dark:text-white/70" />
           </div>
           <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
-            {formatAmount(String(balance?.spendable ?? 0))}
+            {formatMoney(String(balance?.spendable ?? 0))}
           </div>
         </div>
       </div>
@@ -407,12 +449,17 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-3">
               <div className="text-[11px] text-slate-600 dark:text-white/60">Amount</div>
               <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                {formatAmount(String(latestDeposit.amount ?? 0))}
+                {formatMoney(String(latestDeposit.amount ?? 0))}
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 lg:col-span-2">
               <div className="text-[11px] text-slate-600 dark:text-white/60">Address</div>
-              <div className="mt-1 break-all text-sm font-semibold text-slate-900 dark:text-white">{latestDeposit.address ?? "-"}</div>
+              <div className="mt-1 flex items-center gap-1">
+                <span className="font-mono text-sm font-semibold text-slate-900 dark:text-white">
+                  {truncateAddress(latestDeposit.address)}
+                </span>
+                {latestDeposit.address && <CopyButton text={latestDeposit.address} />}
+              </div>
             </div>
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 lg:col-span-3">
               <div className="text-[11px] text-slate-600 dark:text-white/60">Magic Link</div>
@@ -421,10 +468,10 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
                   href={latestDeposit.magic_link}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-1 inline-flex items-center gap-2 break-all text-sm font-semibold text-blue-600 dark:text-blue-300"
+                  className="mt-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
                 >
                   <Link2 className="size-4" />
-                  {latestDeposit.magic_link}
+                  Open Deposit Link
                 </a>
               ) : (
                 <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">-</div>
@@ -580,7 +627,7 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
             key: "amount",
             title: "Amount",
             align: "right",
-            render: (row) => formatAmount(row.amount),
+            render: (row) => formatMoney(row.amount, row.currency ?? "USD"),
           },
           {
             key: "status",
@@ -597,15 +644,31 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
           {
             key: "address",
             title: "Address",
-            render: (row) => row.address ?? "-",
+            render: (row) =>
+              row.address ? (
+                <span className="inline-flex items-center gap-1">
+                  <span className="font-mono text-sm">
+                    {truncateAddress(row.address)}
+                  </span>
+                  <CopyButton text={row.address} />
+                </span>
+              ) : (
+                "-"
+              ),
           },
           {
             key: "magic_link",
             title: "Magic Link",
             render: (row) =>
               row.magic_link ? (
-                <a href={row.magic_link} target="_blank" rel="noreferrer" className="text-blue-600 dark:text-blue-300 underline">
-                  Open link
+                <a
+                  href={row.magic_link}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 transition-colors"
+                >
+                  <Link2 className="size-3" />
+                  Open Deposit Link
                 </a>
               ) : (
                 "-"

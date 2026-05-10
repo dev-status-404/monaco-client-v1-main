@@ -305,6 +305,35 @@ export default function RedeemsLayout() {
     }
   };
 
+  const handleDenyWithdrawal = async (row: RedeemRow) => {
+    if (!id) {
+      alert("Admin user not found");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to deny this withdrawal request?")) return;
+
+    try {
+      await withdrawlActions.updateWithdrawl({
+        id: row.id,
+        status: "rejected",
+        reviewed_by_admin_id: id,
+        admin_note: "Rejected by admin",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
+      queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
+      alert("Withdrawal request has been denied.");
+    } catch (err: any) {
+      alert(
+        err?.response?.data?.error?.message ||
+          err?.response?.data?.message ||
+          err?.message ||
+          "Denial failed",
+      );
+    }
+  };
+
   const rowsRaw: RedeemRow[] = useMemo(() => {
     const arr =
       (Array.isArray((data as any)?.data?.withdrawals) &&
@@ -833,22 +862,32 @@ export default function RedeemsLayout() {
             key: "approve_action",
             title: "Approve",
             render: (row) => {
-              const canApprove =
+              const canAct =
                 isAdmin &&
                 ["requested", "pending", "processing"].includes(
                   String(row.status ?? "").toLowerCase(),
                 );
 
-              if (!canApprove) return "-";
+              if (!canAct) return "-";
 
               return (
-                <Button
-                  size="sm"
-                  className="rounded-xl"
-                  onClick={() => handleApproveWithdrawal(row)}
-                >
-                  Approve
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    className="rounded-xl"
+                    onClick={() => handleApproveWithdrawal(row)}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="rounded-xl"
+                    onClick={() => handleDenyWithdrawal(row)}
+                  >
+                    Deny
+                  </Button>
+                </div>
               );
             },
           },
@@ -862,6 +901,15 @@ export default function RedeemsLayout() {
                   key: "approve-withdrawal",
                   label: "Approve & Release",
                   onClick: handleApproveWithdrawal,
+                  visible: (row) =>
+                    ["requested", "pending", "processing"].includes(
+                      String(row.status ?? "").toLowerCase(),
+                    ),
+                },
+                {
+                  key: "deny-withdrawal",
+                  label: "Deny Request",
+                  onClick: handleDenyWithdrawal,
                   visible: (row) =>
                     ["requested", "pending", "processing"].includes(
                       String(row.status ?? "").toLowerCase(),

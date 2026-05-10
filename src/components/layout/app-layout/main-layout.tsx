@@ -10,6 +10,7 @@ import ReactQueryClientProvider from "@/providers/react-query";
 import SocketBridge from "@/lib/sockets/socket-bridge";
 import AppHeader from "./app-header";
 import { useUserInfo } from "@/helpers/use-user";
+import DepositGate from "@/components/common/deposit-gate";
 
 export default function MainLayout({
   children,
@@ -45,7 +46,9 @@ export default function MainLayout({
             {/* <AppSidebar collapsible="offcanvas" variant="sidebar" /> */}
             <SidebarInset>
               <AppHeader />
-              <main className="flex flex-1 flex-col gap-4 p-4 bg-card ">{children}</main>
+              <main className="flex flex-1 flex-col gap-4 p-4 bg-card ">
+                <DepositGate>{children}</DepositGate>
+              </main>
             </SidebarInset>
           </SidebarProvider>
         </SocketBridge>
