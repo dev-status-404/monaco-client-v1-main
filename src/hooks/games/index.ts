@@ -5,6 +5,7 @@ export const useGames = (params: any) => {
   return useQuery({
     queryKey: ["games", params],
     queryFn: () => gameApi.getGames(params),
+    enabled: params !== null && params !== undefined,
   });
 };
 

@@ -40,20 +40,20 @@ export function attachErrorInterceptor(api: AxiosInstance) {
         originalRequest._retry = true;
 
         if (isRefreshing) {
-          return new Promise((resolve, reject) => {
-            queue.push((token: string) => {
-              try {
-                originalRequest.headers = originalRequest.headers || {};
-                originalRequest.headers.Authorization = `Bearer ${token}`;
-                resolve(api(originalRequest));
-              } catch (e) {
-                reject(e);
-              }
-            });
+          // No token refresh implemented — drain the queue with a rejection
+          // so requests don't hang forever.
+          const err = new Error("Session expired. Please log in again.");
+          queue.forEach((cb) => {
+            try { cb(""); } catch (_) { /* ignore */ }
           });
+          queue = [];
+          isRefreshing = false;
+          return Promise.reject(err);
         }
 
         isRefreshing = true;
+        // Reset flag after a tick so future 401s are handled fresh
+        setTimeout(() => { isRefreshing = false; queue = []; }, 0);
       }
 
       return Promise.reject(error);

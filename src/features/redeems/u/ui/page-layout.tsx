@@ -33,8 +33,10 @@ import {
   AlertTriangle,
   Hourglass,
   CreditCard,
+  Copy,
+  Check,
 } from "lucide-react";
-import { useGames } from "@/hooks/games";
+import { useMyDepositedGames } from "@/hooks/deposit";
 
 type PaymentMethod = "pointsmate";
 
@@ -140,6 +142,31 @@ function formatMoney(amount: string, currency = "USD") {
   }
 }
 
+function truncateAddress(addr?: string) {
+  if (!addr || addr === "-") return "-";
+  if (addr.length <= 16) return addr;
+  return `${addr.slice(0, 8)}...${addr.slice(-4)}`;
+}
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      title="Copy full address"
+      className="ml-1 inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
+    >
+      {copied ? <Check className="size-3 text-emerald-400" /> : <Copy className="size-3" />}
+    </button>
+  );
+}
+
 function isSuccessStatus(s?: string) {
   const x = String(s ?? "").toLowerCase();
   return ["paid", "approved", "completed", "confirmed", "granted"].includes(x);
@@ -153,16 +180,18 @@ export default function RedeemsLayout() {
   const queryClient = useQueryClient();
   const { id, role } = useUserInfo() as any;
   const isAdmin = String(role ?? "").toLowerCase() === "admin";
-  const { data: gamesData } = useGames({ limit: 200 });
 
-  const games = useMemo(() => {
-    const rows = gamesData?.data ?? gamesData?.rows ?? gamesData?.games ?? [];
+  // For the withdrawal modal: only show games the user has deposited into.
+  // Admins skip the restriction and see the full list from the deposits endpoint.
+  const { data: depositedGamesData } = useMyDepositedGames();
+  const depositedGames = useMemo(() => {
+    const rows = depositedGamesData?.data ?? [];
     if (!Array.isArray(rows)) return [];
     return rows.map((g: any) => ({
-      id: g.id ?? g._id,
-      name: g.name ?? g.title ?? "-",
-    }));
-  }, [gamesData]);
+      id: String(g.id ?? g.game_id ?? ""),
+      name: String(g.name ?? g.game_name ?? g.id ?? "-"),
+    })).filter((g) => g.id);
+  }, [depositedGamesData]);
 
   /* ---------------- FILTER STATE ---------------- */
 
@@ -391,7 +420,8 @@ export default function RedeemsLayout() {
       }
     }
 
-    return rowsRaw.filter((r) => {
+    return rowsRaw
+      .filter((r) => {
       // status
       if (appliedFilters.status !== "all") {
         const s = String(r.status ?? "").toLowerCase();
@@ -444,7 +474,11 @@ export default function RedeemsLayout() {
       }
 
       return true;
-    });
+      })
+      .sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      );
   }, [rowsRaw, appliedFilters]);
 
   // ✅ KPI based on filteredRows (what user sees)
@@ -725,7 +759,7 @@ export default function RedeemsLayout() {
                 className="h-10 w-full mt-2 dark:bg-black rounded-2xl border border-border"
               >
                 <option value="">All games</option>
-                {games.map((g) => (
+                {depositedGames.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}
                   </option>
@@ -814,6 +848,20 @@ export default function RedeemsLayout() {
       <GlobalDataTable<RedeemRow>
         title="Redeem Requests"
         columns={[
+          ...(isAdmin
+            ? [
+                {
+                  key: "user",
+                  title: "User",
+                  render: (row: RedeemRow) => {
+                    const u = row.user;
+                    if (!u) return "-";
+                    const name = [u.firstName, u.lastName].filter(Boolean).join(" ");
+                    return name || u.email || "-";
+                  },
+                },
+              ]
+            : []),
           { key: "game", title: "Game", render: (row) => row.game_name ?? "-" },
           {
             key: "amount",
@@ -834,7 +882,16 @@ export default function RedeemsLayout() {
           {
             key: "destination",
             title: "Wallet Address",
-            render: (row) => row.destination ?? "-",
+            render: (row) => {
+              const addr = row.destination ?? "";
+              if (!addr || addr === "-") return "-";
+              return (
+                <span className="inline-flex items-center font-mono text-xs">
+                  {truncateAddress(addr)}
+                  <CopyButton text={addr} />
+                </span>
+              );
+            },
           },
           {
             key: "status",
@@ -969,6 +1026,8 @@ export default function RedeemsLayout() {
                 <GamesSelect
                   value={requestForm.game_id}
                   disabled={isSubmitting}
+                  games={depositedGames}
+                  placeholder={depositedGames.length === 0 ? "No deposited platforms found" : "Select platform"}
                   onChange={(game: GameOption | null) =>
                     setRequestForm((p) => ({
                       ...p,

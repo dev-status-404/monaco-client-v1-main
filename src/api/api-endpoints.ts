@@ -60,6 +60,7 @@ export const apiEndpoints = {
     create: "/deposits/create",
     update: (id: string | number) => `/deposits/update/${id}`,
     delete: (id: string | number) => `/deposits/delete/${id}`,
+    myGames: "/deposits/my-games",
   },
 
   games: {
@@ -80,6 +81,8 @@ export const apiEndpoints = {
     balance: (userId: string) => `/wallet/balance/${userId}`,
     transactions: (userId: string, params: any) =>
       withPagination(`/wallet/transactions/${userId}`, params),
+    allTransactions: (params: any) =>
+      withPagination(`/wallet/transactions`, params),
     transaction: (userId: string, txId: string) =>
       `/wallet/transaction/${userId}/${txId}`,
   },

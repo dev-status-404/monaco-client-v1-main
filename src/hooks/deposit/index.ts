@@ -8,6 +8,15 @@ export const useDeposits = (params: any) => {
   });
 };
 
+/** Returns only games where the current user has ≥1 confirmed deposit. */
+export const useMyDepositedGames = () => {
+  return useQuery({
+    queryKey: ["my-deposited-games"],
+    queryFn: () => depositApi.getMyDepositedGames(),
+    staleTime: 60_000, // cache for 1 min — list changes rarely
+  });
+};
+
 export const useDepositActions = () => {
   const queryClient = useQueryClient();
 

@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from "react";
 import { useUserInfo } from "@/helpers/use-user";
 import { useWalletBalance, useWalletActions } from "@/hooks/wallet";
-import { useDeposits } from "@/hooks/deposit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +19,7 @@ const RECEIVE_TYPE_OPTIONS: { value: ReceiveType; label: string }[] = [
   { value: "onchain", label: "On-chain" },
 ];
 
-const MIN_DEPOSIT = 5;
+const MIN_DEPOSIT = 1;
 const MAX_DEPOSIT_HINT = 10;
 
 export default function DepositGate({
@@ -35,11 +34,6 @@ export default function DepositGate({
 
   const { data: balanceData, isLoading: balanceLoading } = useWalletBalance(
     id as string | undefined,
-  );
-
-  // Fetch user's deposit history to know if they've ever deposited
-  const { data: depositsData, isLoading: depositsLoading } = useDeposits(
-    id ? { user_id: id, limit: 100 } : null,
   );
 
   const [form, setForm] = useState({
@@ -64,29 +58,7 @@ export default function DepositGate({
       0,
   );
 
-  // Sum all completed/confirmed deposits to determine gate unlock
-  const rawDeposits =
-    (depositsData as any)?.data?.items ??
-    (depositsData as any)?.data ??
-    (depositsData as any)?.items ??
-    depositsData ??
-    [];
-  const allDeposits: any[] = Array.isArray(rawDeposits) ? rawDeposits : [];
-
-  const confirmedStatuses = ["completed", "confirmed", "success", "done"];
-  const totalDeposited = allDeposits
-    .filter((d: any) =>
-      confirmedStatuses.includes(
-        String(d?.status ?? d?.api_status ?? "").toLowerCase(),
-      ),
-    )
-    .reduce((sum: number, d: any) => {
-      const amt =
-        Number(d?.amount_usd ?? d?.amountUsd ?? d?.amount ?? 0);
-      return sum + amt;
-    }, 0);
-
-  const isLoading = balanceLoading || depositsLoading;
+  const isLoading = balanceLoading;
 
   // Poll every 6 seconds while the gate is visible so the modal auto-closes
   // as soon as the deposit arrives without needing a manual refresh
@@ -94,7 +66,6 @@ export default function DepositGate({
     if (!id || isAdmin) return;
     const interval = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ["wallet-balance", id] });
-      queryClient.invalidateQueries({ queryKey: ["deposits"] });
     }, 6000);
     return () => clearInterval(interval);
   }, [id, isAdmin, queryClient]);
@@ -104,10 +75,10 @@ export default function DepositGate({
 
   // Gate is open when:
   //  (a) still loading, OR
-  //  (b) no deposits have ever been made (totalDeposited === 0), OR
-  //  (c) spendable balance is below the minimum threshold
-  const needsDeposit =
-    !isLoading && (totalDeposited < MIN_DEPOSIT || spendable < MIN_DEPOSIT);
+  //  (b) spendable wallet balance is below the minimum threshold
+  // Deposit history (totalDeposited) is not used as a gate condition —
+  // spendable is the single source of truth.
+  const needsDeposit = !isLoading && spendable < MIN_DEPOSIT;
   const showOverlay = isLoading || needsDeposit;
 
   if (!showOverlay) return <>{children}</>;
@@ -231,7 +202,6 @@ export default function DepositGate({
                     className="w-full rounded-xl"
                     onClick={() => {
                       queryClient.invalidateQueries({ queryKey: ["wallet-balance", id] });
-                      queryClient.invalidateQueries({ queryKey: ["deposits"] });
                     }}
                   >
                     I&apos;ve deposited — Refresh

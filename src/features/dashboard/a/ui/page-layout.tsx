@@ -388,6 +388,18 @@ const AdminDashboard = () => {
           viewAllLabel="View Redeems"
           showViewAll
         />
+        {/* WALLET TRANSACTIONS */}
+        <GlobalDataTable
+          title="Wallet Transactions"
+          columns={transactionsColumns as any}
+          data={transactions}
+          enableAdd={false}
+          showActions={false}
+          actions={[]}
+          viewAllHref={`/wallet-transactions/a/${id}`}
+          viewAllLabel="View Transactions"
+          showViewAll
+        />
         {/* GAME REQUESTS */}
         <GlobalDataTable
           title="Game Requests"

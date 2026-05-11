@@ -24,6 +24,7 @@ import {
   useWalletActions,
   useWalletBalance,
   useWalletTransactionsByUser,
+  useAllWalletTransactions,
 } from "@/hooks/wallet";
 import {
   Search,
@@ -171,7 +172,7 @@ function isWithinDate(createdAt: string, range: "all" | "today" | "last7" | "las
   return created >= cutoff;
 }
 
-export default function DepositLayout({ userId: userIdProp }: { userId?: string }) {
+export default function DepositLayout({ userId: userIdProp, adminMode = false }: { userId?: string; adminMode?: boolean }) {
   const queryClient = useQueryClient();
   const { id: currentUserId } = useUserInfo();
   const id = userIdProp ?? currentUserId;
@@ -220,13 +221,23 @@ export default function DepositLayout({ userId: userIdProp }: { userId?: string 
     }));
   }, [gamesData]);
 
-  const { data: balanceResponse } = useWalletBalance(id as string | undefined);
-  const { data, isLoading, isFetching } = useWalletTransactionsByUser(id as string | undefined, {
-    type: "deposit",
-    status: query.status,
-    page: query.page,
-    limit: query.limit,
-  });
+  const { data: balanceResponse } = useWalletBalance(adminMode ? undefined : id as string | undefined);
+  const { data: userTxData, isLoading: userTxLoading, isFetching: userTxFetching } = useWalletTransactionsByUser(
+    adminMode ? undefined : id as string | undefined,
+    {
+      type: "deposit",
+      status: query.status,
+      page: query.page,
+      limit: query.limit,
+    },
+  );
+  const { data: allTxData, isLoading: allTxLoading, isFetching: allTxFetching } = useAllWalletTransactions(
+    { type: "deposit", status: query.status, page: query.page, limit: query.limit },
+    adminMode,
+  );
+  const data = adminMode ? allTxData : userTxData;
+  const isLoading = adminMode ? allTxLoading : userTxLoading;
+  const isFetching = adminMode ? allTxFetching : userTxFetching;
 
   const rowsRaw: DepositRow[] = useMemo(() => {
     const items = (data as any)?.data?.items ?? [];

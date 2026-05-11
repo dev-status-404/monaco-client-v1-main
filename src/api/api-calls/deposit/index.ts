@@ -44,4 +44,9 @@ export const depositApi = {
     const response = await api.delete(apiEndpoints.deposits.delete(id));
     return response.data;
   },
+  // Returns distinct games the user has made confirmed deposits for
+  getMyDepositedGames: async () => {
+    const response = await api.get(apiEndpoints.deposits.myGames);
+    return response.data;
+  },
 };

@@ -33,6 +33,16 @@ export const walletApi = {
     return response.data;
   },
 
+  getAllTransactions: async (params: {
+    type?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  } = {}) => {
+    const response = await api.get(apiEndpoints.wallet.allTransactions(params));
+    return response.data;
+  },
+
   getTransactionDetail: async (userId: string, txId: string) => {
     const response = await api.get(apiEndpoints.wallet.transaction(userId, txId));
     return response.data;

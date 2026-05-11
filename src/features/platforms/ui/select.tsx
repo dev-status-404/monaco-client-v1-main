@@ -15,6 +15,8 @@ type GamesSelectProps = {
   className?: string;
 
   limit?: number;
+  /** If provided, these games are used directly and the internal fetch is skipped. */
+  games?: GameOption[];
 };
 
 const GamesSelect: React.FC<GamesSelectProps> = ({
@@ -24,12 +26,17 @@ const GamesSelect: React.FC<GamesSelectProps> = ({
   disabled,
   className = "",
   limit = 100,
+  games: gamesProp,
 }) => {
   const [query] = useState({ page: 1, limit });
 
-  const { data, isLoading} = useGames(query as any);
+  // Only fetch from the API when no external list is provided
+  const { data, isLoading } = useGames(gamesProp ? null : (query as any));
 
   const games: GameOption[] = useMemo(() => {
+    // If caller passed an explicit list, use it directly
+    if (gamesProp) return gamesProp;
+
     const arr =
       (Array.isArray((data as any)?.data?.games) && (data as any).data.games) ||
       (Array.isArray((data as any)?.data?.items) && (data as any).data.items) ||
@@ -43,7 +50,7 @@ const GamesSelect: React.FC<GamesSelectProps> = ({
         name: g.name ?? g.title ?? "Unnamed platform",
       }))
       .filter((g: GameOption) => Boolean(g.id));
-  }, [data]);
+  }, [data, gamesProp]);
 
   return (
     <div className={`space-y-2 ${className}`}>

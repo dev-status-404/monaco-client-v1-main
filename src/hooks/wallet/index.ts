@@ -37,6 +37,22 @@ export const useWalletTransactionsByUser = (
   });
 };
 
+export const useAllWalletTransactions = (
+  params: {
+    type?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  } = {},
+  enabled = true,
+) => {
+  return useQuery({
+    queryKey: ["wallet-transactions-all", params],
+    queryFn: () => walletApi.getAllTransactions(params),
+    enabled,
+  });
+};
+
 export const useWalletActions = () => {
   const queryClient = useQueryClient();
 

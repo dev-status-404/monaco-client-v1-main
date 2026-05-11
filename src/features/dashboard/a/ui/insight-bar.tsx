@@ -118,6 +118,7 @@ const InsightCard = ({
   insights,
   meta,
   itemsCount,
+  isCurrency,
 }: {
   title: string;
   subtitle?: string;
@@ -125,6 +126,7 @@ const InsightCard = ({
   insights: Insights;
   meta: SectionMeta;
   itemsCount: number;
+  isCurrency?: boolean;
 }) => {
   const rangeDays = safeNum(insights.rangeDays, 0);
   const total = safeNum(insights.total, 0);
@@ -141,6 +143,8 @@ const InsightCard = ({
   const limit = safeNum(meta.limit, 10);
   const totalItems = safeNum(meta.totalItems, 0);
   const totalPages = safeNum(meta.totalPages, 1);
+
+  const formattedTotal = isCurrency ? `$${total.toLocaleString()}` : total.toLocaleString();
 
   return (
     <div className="rounded-2xl border p-4 shadow-sm">
@@ -163,7 +167,7 @@ const InsightCard = ({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <Stat label="Total (range)" value={total} />
+        <Stat label="Total (range)" value={formattedTotal} />
         {/* <Stat label="Avg / day" value={avgPerDay} /> */}
         {/* <Stat label="Best day" value={bestDay} /> */}
         {/* <Stat label="Best count" value={bestCount} /> */}
@@ -181,17 +185,20 @@ export const DashboardInsightsCards = ({ data }: { data?: DashboardLike }) => {
       key: SectionKey;
       title: string;
       icon: React.ReactNode;
+      isCurrency?: boolean;
     }> = [
       { key: "users", title: "Users", icon: <Users className="h-5 w-5" /> },
       {
         key: "deposits",
         title: "Deposits",
         icon: <CreditCard className="h-5 w-5 " />,
+        isCurrency: true,
       },
       {
         key: "withdraws",
         title: "Withdraws",
         icon: <Landmark className="h-5 w-5" />,
+        isCurrency: true,
       },
       {
         key: "transactions",
@@ -223,6 +230,7 @@ export const DashboardInsightsCards = ({ data }: { data?: DashboardLike }) => {
             data?.filter?.range ? `Range: ${data.filter.range}` : undefined
           }
           icon={c.icon}
+          isCurrency={c.isCurrency}
           insights={c.insights}
           meta={c.meta}
           itemsCount={c.itemsCount}

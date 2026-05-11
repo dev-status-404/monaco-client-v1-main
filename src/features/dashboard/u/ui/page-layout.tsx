@@ -277,8 +277,16 @@ export default function Dashboard() {
     totalRewards: 0,
   };
 
-  const deposits: TxRow[] = data?.pages?.deposits?.items ?? [];
-  const withdraws: TxRow[] = data?.pages?.withdraws?.items ?? [];
+  // Wallet transactions are the ledger source of truth:
+  //   direction="credit"  → deposit activity
+  //   direction="debit"   → withdrawal/redeem activity
+  const allTransactions: TxRow[] = data?.pages?.transactions?.items ?? [];
+  const deposits: TxRow[] = allTransactions.filter(
+    (tx) => String(tx.direction ?? "").toLowerCase() === "credit",
+  );
+  const withdraws: TxRow[] = allTransactions.filter(
+    (tx) => String(tx.direction ?? "").toLowerCase() === "debit",
+  );
 
   const filteredDeposits = useMemo(
     () => filterRows(deposits, applied),
