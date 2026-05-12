@@ -5,6 +5,7 @@ export const useWalletTransactions = (params: any) => {
   return useQuery({
     queryKey: ["wallet-transactions", params],
     queryFn: () => walletTransactionApi.getTransactions(params),
+    enabled: params !== null && params !== undefined,
   });
 };
 

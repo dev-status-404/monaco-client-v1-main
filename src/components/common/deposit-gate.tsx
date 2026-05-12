@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useUserInfo } from "@/helpers/use-user";
 import { useWalletBalance, useWalletActions } from "@/hooks/wallet";
+import { useWalletTransactions } from "@/hooks/wallet-transaction";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { Wallet, ArrowDownToLine, ShieldAlert } from "lucide-react";
+import { Wallet, ArrowDownToLine, ShieldAlert, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import GamesSelect, { type GameOption } from "@/features/platforms/ui/select";
@@ -21,6 +22,7 @@ const RECEIVE_TYPE_OPTIONS: { value: ReceiveType; label: string }[] = [
 
 const MIN_DEPOSIT = 1;
 const MAX_DEPOSIT_HINT = 10;
+const REMINDER_INTERVAL_MS = 5 * 60 * 1000;
 
 export default function DepositGate({
   children,
@@ -35,6 +37,19 @@ export default function DepositGate({
   const { data: balanceData, isLoading: balanceLoading } = useWalletBalance(
     id as string | undefined,
   );
+
+  const { data: txData } = useWalletTransactions(
+    id && !isAdmin ? { user_id: id, type: "deposit", limit: 1 } : null,
+  );
+
+  const hasDeposits =
+    Array.isArray((txData as any)?.data)
+      ? (txData as any).data.length > 0
+      : Array.isArray((txData as any)?.transactions)
+        ? (txData as any).transactions.length > 0
+        : false;
+
+  const [dismissed, setDismissed] = useState(false);
 
   const [form, setForm] = useState({
     amount: "",
@@ -60,28 +75,44 @@ export default function DepositGate({
 
   const isLoading = balanceLoading;
 
-  // Poll every 6 seconds while the gate is visible so the modal auto-closes
-  // as soon as the deposit arrives without needing a manual refresh
+  // Poll every 6 seconds while gate is visible so it auto-closes on deposit arrival
   useEffect(() => {
-    if (!id || isAdmin) return;
+    if (!id || isAdmin || dismissed) return;
     const interval = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ["wallet-balance", id] });
     }, 6000);
     return () => clearInterval(interval);
-  }, [id, isAdmin, queryClient]);
+  }, [id, isAdmin, dismissed, queryClient]);
 
-  // Admins and unauthenticated users bypass the gate
+  // Remind every 5 minutes after dismissal if still no deposits
+  const remindedRef = useRef(false);
+  useEffect(() => {
+    if (!id || isAdmin || !dismissed || hasDeposits) return;
+
+    const showReminder = () => {
+      toast.warning("Reminder: make a deposit to unlock full access!", {
+        id: "deposit-reminder",
+        duration: 10000,
+      });
+    };
+
+    if (!remindedRef.current) {
+      showReminder();
+      remindedRef.current = true;
+    }
+
+    const interval = setInterval(showReminder, REMINDER_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [id, isAdmin, dismissed, hasDeposits]);
+
+  // Admins and unauthenticated users bypass the gate entirely
   if (!id || isAdmin) return <>{children}</>;
 
-  // Gate is open when:
-  //  (a) still loading, OR
-  //  (b) spendable wallet balance is below the minimum threshold
-  // Deposit history (totalDeposited) is not used as a gate condition —
-  // spendable is the single source of truth.
   const needsDeposit = !isLoading && spendable < MIN_DEPOSIT;
-  const showOverlay = isLoading || needsDeposit;
+  const showGate = !dismissed && (isLoading || needsDeposit);
 
-  if (!showOverlay) return <>{children}</>;
+  // Gate dismissed or deposit satisfied — render children normally
+  if (!showGate) return <>{children}</>;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,9 +155,20 @@ export default function DepositGate({
         {children}
       </div>
 
-      {/* Full-screen backdrop + modal — appears immediately on redirect */}
+      {/* Full-screen backdrop + modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-        <div className="w-full max-w-md rounded-2xl border border-white/10 bg-card p-6 shadow-2xl space-y-5">
+        <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-card p-6 shadow-2xl space-y-5">
+
+          {/* Dismiss button */}
+          {!isLoading && (
+            <button
+              onClick={() => setDismissed(true)}
+              className="absolute top-4 right-4 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+              aria-label="Dismiss and continue to dashboard"
+            >
+              <X className="size-4" />
+            </button>
+          )}
 
           {/* Header */}
           <div className="flex flex-col items-center gap-3 text-center">
@@ -282,6 +324,14 @@ export default function DepositGate({
                     )}
                     {walletActions.isPending ? "Creating..." : "Create Deposit Address"}
                   </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDismissed(true)}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                  >
+                    Skip for now and continue to dashboard
+                  </button>
                 </form>
               )}
             </>
