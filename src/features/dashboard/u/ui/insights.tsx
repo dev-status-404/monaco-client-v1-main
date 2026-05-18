@@ -6,10 +6,18 @@ type Totals = {
   totalRewards: number;
 };
 
-const StatCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-2xl border border-slate-200 dark:border-white bg-slate-50 dark:bg-white/5 p-4">
-    <p className="text-xs text-slate-600 dark:text-white/60">{label}</p>
-    <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{value}</p>
+const StatCard = ({
+  label,
+  value,
+  variant,
+}: {
+  label: string;
+  value: string;
+  variant: string;
+}) => (
+  <div className={`${variant} p-4`}>
+    <p className="text-xs text-white/85">{label}</p>
+    <p className="mt-2 text-2xl font-semibold text-white">{value}</p>
   </div>
 );
 
@@ -22,14 +30,17 @@ const Insights = ({ totals }: { totals: Totals }) => {
       <StatCard
         label="Total Deposits"
         value={`$${fmt(totals.totalDeposits ?? 0)}`}
+        variant="gradient-card-a"
       />
       <StatCard
         label="Total Withdraws"
         value={`$${fmt(totals.totalWithdraws ?? 0)}`}
+        variant="gradient-card-b"
       />
       <StatCard
         label="Total Rewards"
         value={`$${fmt(totals.totalRewards ?? 0)}`}
+        variant="gradient-card-c"
       />
     </div>
   );

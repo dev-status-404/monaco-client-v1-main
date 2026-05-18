@@ -377,7 +377,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
   }
 
   return (
-    <div className="space-y-6 mt-12">
+    <div className="page-shell mt-10 space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SectionTitle title="Deposits" />
 
@@ -400,52 +400,52 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-a p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Total records</div>
-            <Wallet className="size-4 text-slate-500 dark:text-white/70" />
+            <div className="text-xs text-white/85">Total records</div>
+            <Wallet className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{stats.total}</div>
+          <div className="mt-2 text-2xl font-semibold text-white">{stats.total}</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-b p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Completed</div>
-            <BadgeCheck className="size-4 text-slate-500 dark:text-white/70" />
+            <div className="text-xs text-white/85">Completed</div>
+            <BadgeCheck className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{stats.completedCount}</div>
-          <div className="mt-1 text-xs text-slate-600 dark:text-white/60">{formatMoney(String(stats.totalCompletedAmount))} total</div>
+          <div className="mt-2 text-2xl font-semibold text-white">{stats.completedCount}</div>
+          <div className="mt-1 text-xs text-white/80">{formatMoney(String(stats.totalCompletedAmount))} total</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-c p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Pending</div>
-            <Hourglass className="size-4 text-slate-500 dark:text-white/70" />
+            <div className="text-xs text-white/85">Pending</div>
+            <Hourglass className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{stats.pendingCount}</div>
+          <div className="mt-2 text-2xl font-semibold text-white">{stats.pendingCount}</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-d p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Failed</div>
-            <AlertTriangle className="size-4 text-slate-500 dark:text-white/70" />
+            <div className="text-xs text-white/85">Failed</div>
+            <AlertTriangle className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{stats.failedCount}</div>
+          <div className="mt-2 text-2xl font-semibold text-white">{stats.failedCount}</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-e p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-slate-600 dark:text-white/60">Spendable</div>
-            <Wallet className="size-4 text-slate-500 dark:text-white/70" />
+            <div className="text-xs text-white/85">Spendable</div>
+            <Wallet className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+          <div className="mt-2 text-2xl font-semibold text-white">
             {formatMoney(String(balance?.spendable ?? 0))}
           </div>
         </div>
       </div>
 
       {latestDeposit ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 space-y-3">
+        <div className="gradient-card-soft p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-sm font-semibold text-slate-900 dark:text-white">Latest Deposit Address</div>
@@ -492,7 +492,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
         </div>
       ) : null}
 
-      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+      <div className="filter-bar-gradient p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:flex-1">
             <div className="space-y-2">
@@ -573,7 +573,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="pagination-bar-gradient p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-600 dark:text-white/60">Rows</span>
           <div className="flex gap-2">
@@ -696,7 +696,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       />
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="border-slate-200 dark:border-white/10 bg-white dark:bg-card text-slate-900 dark:text-white">
+        <DialogContent className="gradient-card-soft text-slate-900">
           <DialogHeader>
             <DialogTitle>Create Deposit Address</DialogTitle>
             <DialogDescription className="text-slate-600 dark:text-white/60">

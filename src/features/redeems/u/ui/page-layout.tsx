@@ -601,7 +601,7 @@ export default function RedeemsLayout() {
   }
 
   return (
-    <div className="space-y-6 mt-12 text-foreground">
+    <div className="page-shell mt-10 space-y-6 text-foreground">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SectionTitle title="Redeems" />
@@ -631,50 +631,50 @@ export default function RedeemsLayout() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-a p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">Total requests</div>
-            <Wallet className="size-4 text-muted-foreground" />
+            <div className="text-xs text-white/85">Total requests</div>
+            <Wallet className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold">{stats.total}</div>
+          <div className="mt-2 text-2xl font-semibold text-white">{stats.total}</div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-b p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">Approved / Paid</div>
-            <BadgeCheck className="size-4 text-muted-foreground" />
+            <div className="text-xs text-white/85">Approved / Paid</div>
+            <BadgeCheck className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold">
+          <div className="mt-2 text-2xl font-semibold text-white">
             {stats.approvedPaidCount}
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">
+          <div className="mt-1 text-xs text-white/80">
             {formatMoney(String(stats.totalPaid), stats.currency)} total
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-c p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">Pending</div>
-            <Hourglass className="size-4 text-muted-foreground" />
+            <div className="text-xs text-white/85">Pending</div>
+            <Hourglass className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold">
+          <div className="mt-2 text-2xl font-semibold text-white">
             {stats.pendingCount}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+        <div className="gradient-card-d p-4">
           <div className="flex items-center justify-between">
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-white/85">
               Failed / Rejected
             </div>
-            <AlertTriangle className="size-4 text-muted-foreground" />
+            <AlertTriangle className="size-4 text-white/90" />
           </div>
-          <div className="mt-2 text-2xl font-semibold">{stats.failedCount}</div>
+          <div className="mt-2 text-2xl font-semibold text-white">{stats.failedCount}</div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4">
+      <div className="filter-bar-gradient p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:flex-1">
             <div className="space-y-2">
@@ -790,7 +790,7 @@ export default function RedeemsLayout() {
         </div>
       </div>
       {/* Pagination */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="pagination-bar-gradient p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">Rows</span>
           <div className="flex gap-2">
@@ -980,7 +980,7 @@ export default function RedeemsLayout() {
       {/* Modal */}
       {!isAdmin && (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="border-border bg-card text-foreground">
+          <DialogContent className="gradient-card-soft text-slate-900">
             <DialogHeader>
               <DialogTitle>Request Redeem</DialogTitle>
               <DialogDescription className="text-muted-foreground">

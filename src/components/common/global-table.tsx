@@ -242,7 +242,12 @@ export function GlobalDataTable<T extends { id: string | number }>(
         </div>
       )}
 
-      <div className={cn("rounded-lg border border-border bg-transparent max-h-[380px] overflow-y-auto", heightClassName)}>
+      <div
+        className={cn(
+          "rounded-lg border border-border bg-gradient-to-br from-sky-50 via-indigo-50 to-cyan-50 dark:from-slate-900/90 dark:via-slate-800/90 dark:to-slate-900/90 max-h-[380px] overflow-y-auto",
+          heightClassName,
+        )}
+      >
         <Table>
           <TableHeader>
             <TableRow>

@@ -260,7 +260,7 @@ const PlatformLayout = () => {
   }
 
   return (
-    <div className="space-y-6 mt-12">
+    <div className="page-shell mt-10 space-y-6">
       <SectionTitle title="Platforms" />
 
       {/* Top bar */}
@@ -284,7 +284,14 @@ const PlatformLayout = () => {
 
       {/* Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filtered.map((game) => {
+        {filtered.map((game, index) => {
+          const cardVariant = [
+            "gradient-card-a",
+            "gradient-card-b",
+            "gradient-card-c",
+            "gradient-card-d",
+            "gradient-card-e",
+          ][index % 5];
           const c = credsForGame(game.id);
           const r = requestForGame(game.id);
           const badgeText = c
@@ -306,9 +313,9 @@ const PlatformLayout = () => {
           return (
             <div
               key={game.id}
-              className="group overflow-hidden rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 shadow-sm backdrop-blur"
+              className={`group overflow-hidden rounded-2xl ${cardVariant} shadow-sm backdrop-blur`}
             >
-              <div className="relative h-40 w-full bg-slate-200 dark:bg-black/20">
+              <div className="relative h-40 w-full bg-black/10">
                 {game.image_url ? (
                   <Image
                     src={game.image_url}
@@ -337,7 +344,7 @@ const PlatformLayout = () => {
                   {game.provider ? (
                     <Badge
                       variant="secondary"
-                      className="rounded-xl bg-slate-200 dark:bg-white/20 text-slate-900 dark:text-white"
+                      className="rounded-xl bg-white/25 text-white"
                     >
                       {game.provider}
                     </Badge>
@@ -347,10 +354,10 @@ const PlatformLayout = () => {
 
               <div className="p-4">
                 <div className="min-w-0">
-                  <h3 className="truncate text-base font-semibold text-slate-900 dark:text-white">
+                  <h3 className="truncate text-base font-semibold text-white">
                     {game.name}
                   </h3>
-                  <p className="mt-1 text-xs text-slate-600 dark:text-white/60">
+                  <p className="mt-1 text-xs text-white/80">
                     {game.createdAt
                       ? `Added ${new Date(game.createdAt).toLocaleDateString()}`
                       : "—"}

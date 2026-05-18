@@ -246,6 +246,7 @@ export default function Dashboard() {
     return rows.map((g: any) => ({
       id: g.id ?? g._id,
       name: g.name ?? g.title ?? "-",
+      image_url: g.image_url ?? g.cover ?? g.thumbnail ?? "",
     }));
   }, [gamesData]);
 
@@ -270,6 +271,22 @@ export default function Dashboard() {
     const base = origin.replace(/\/$/, "");
     return `${base}/auth/signup?ref=${encodeURIComponent(referralCode)}&demo=1`;
   }, [origin, referralCode]);
+
+  const platformsHref = id ? `/platforms/u/${id}` : "#";
+  const featuredGames = useMemo(
+    () =>
+      games
+        .filter(
+          (g) =>
+            Boolean(g.image_url) &&
+            !String(g.name ?? "")
+              .trim()
+              .toLowerCase()
+              .includes("juwa"),
+        )
+        .slice(0, 8),
+    [games],
+  );
 
   const totals = data?.totals ?? {
     totalDeposits: 0,
@@ -316,15 +333,12 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 mt-12">
+    <div className="page-shell mt-10 space-y-6 rounded-3xl bg-gradient-to-t from-emerald-300/35 via-cyan-300/22 to-blue-300/12 p-4 sm:p-6 dark:from-emerald-500/18 dark:via-cyan-500/12 dark:to-blue-500/8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <SectionTitle title="Dashboard" />
 
         <div className="flex items-center gap-2">
-          <Button
-            className="rounded-2xl"
-            onClick={() => setIsReferralOpen(true)}
-          >
+          <Button className="neon-btn" onClick={() => setIsReferralOpen(true)}>
             <Gift className="mr-2 size-4" />
             Refer a Friend
           </Button>
@@ -346,20 +360,20 @@ export default function Dashboard() {
       </div>
 
       <Dialog open={isReferralOpen} onOpenChange={setIsReferralOpen}>
-        <DialogContent className="border-slate-200 bg-white text-slate-900 dark:border-white/10 dark:bg-card dark:text-white">
+        <DialogContent className="gradient-card-soft text-slate-900">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Gift className="size-5" />
               Refer a Friend
             </DialogTitle>
-            <DialogDescription className="text-slate-600 dark:text-white/60">
+            <DialogDescription className="text-slate-600">
               Share this demo signup URL with a friend. It points to the signup
               page with a sample referral code.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
+            <div className="gradient-card-soft p-4">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <Label className="text-slate-700 dark:text-white/80">
                   Demo referral URL
@@ -375,23 +389,19 @@ export default function Dashboard() {
                 className="font-mono text-xs sm:text-sm"
               />
 
-              <p className="mt-2 text-xs text-slate-500 dark:text-white/50">
+              <p className="mt-2 text-xs text-slate-600">
                 Friends can use this link to open signup with the demo referral
                 attached.
               </p>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              <Button
-                variant="secondary"
-                className="rounded-2xl"
-                onClick={copyReferralUrl}
-              >
+              <Button className="neon-btn" onClick={copyReferralUrl}>
                 <Copy className="mr-2 size-4" />
                 Copy Link
               </Button>
 
-              <Button asChild className="rounded-2xl">
+              <Button asChild className="neon-btn">
                 <a href={referralUrl} target="_blank" rel="noreferrer">
                   <ExternalLink className="mr-2 size-4" />
                   Open Signup
@@ -404,8 +414,71 @@ export default function Dashboard() {
 
       <Insights totals={totals} />
 
+      <div className="space-y-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-lg font-semibold text-slate-900">Games</h2>
+          <Button
+            asChild
+            className="rounded-2xl bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 text-white shadow-md hover:from-cyan-300 hover:via-blue-400 hover:to-indigo-500"
+          >
+            <a href={platformsHref}>View All Platforms</a>
+          </Button>
+        </div>
+
+        {featuredGames.length ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {featuredGames.map((game, index) => {
+              const variant = [
+                "gradient-card-a",
+                "gradient-card-b",
+                "gradient-card-c",
+                "gradient-card-d",
+                "gradient-card-e",
+              ][index % 5];
+
+              return (
+                <div
+                  key={game.id}
+                  className={`${variant} p-4`}
+                  style={{
+                    backgroundImage: `linear-gradient(135deg, rgba(15, 23, 42, 0.35), rgba(15, 23, 42, 0.5)), url(${game.image_url})`,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "center",
+                    backgroundSize: "cover",
+                  }}
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-cyan-300 via-sky-500 to-indigo-600 shadow-lg ring-2 ring-white/35">
+                      <Gamepad2 className="h-4 w-4 text-white" />
+                    </span>
+                    <Badge className="bg-white/20 text-white hover:bg-white/30">
+                      Live
+                    </Badge>
+                  </div>
+
+                  <p className="truncate text-sm font-semibold text-white">
+                    {game.name}
+                  </p>
+
+                  <Button
+                    asChild
+                    className="mt-4 h-9 rounded-xl bg-gradient-to-r from-emerald-400 via-cyan-500 to-blue-600 text-white shadow-md hover:from-emerald-300 hover:via-cyan-400 hover:to-blue-500"
+                  >
+                    <a href={platformsHref}>Open</a>
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="gradient-card-soft p-4 text-sm text-slate-700">
+            No games with images available yet.
+          </div>
+        )}
+      </div>
+
       {/* Filters */}
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-white/10 dark:bg-white/5">
+      <div className="filter-bar-gradient p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:flex-1">
             <div className="space-y-2">

@@ -106,12 +106,12 @@ const AppHeader = () => {
       ];
   return (
     <header className="w-full">
-      <div className=" border border-white/15 bg-emerald-400 px-6 py-4">
+      <div className="border border-emerald-100 bg-white/90 px-4 py-4 shadow-sm backdrop-blur md:px-6 dark:border-slate-700 dark:bg-slate-900/85">
         <div className="flex items-center justify-between gap-6">
           {/* Left: Brand */}
           <Link href="/dashboard" className="flex items-center gap-3">
             {/* Replace with your logo */}
-            <div className="relative h-14 w-14 overflow-hidden rounded-xl bg-white/10 ring-1 ring-white/20">
+            <div className="relative h-14 w-14 overflow-hidden rounded-xl bg-emerald-50 ring-1 ring-emerald-200 dark:bg-slate-800 dark:ring-slate-600">
               {/* If you don't have a file, remove Image and use text */}
               <Image
                 src={LOGO}
@@ -121,10 +121,10 @@ const AppHeader = () => {
               />
             </div>
             <div className="hidden sm:block">
-              <div className="text-lg font-extrabold tracking-tight text-black/90">
+              <div className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
                 Monaco
               </div>
-              <div className="text-xs font-medium text-black/50">
+              <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
                 Player Hub
               </div>
             </div>
@@ -142,8 +142,8 @@ const AppHeader = () => {
                   href={item.href}
                   className={cn(
                     "relative flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition",
-                    "text-black/55 hover:text-black/90 hover:bg-white/25",
-                    active && "bg-white/30 text-black/95",
+                    "text-slate-600 hover:text-slate-900 hover:bg-emerald-50 dark:text-slate-300 dark:hover:text-white dark:hover:bg-slate-800",
+                    active && "bg-emerald-100 text-slate-900 dark:bg-slate-700 dark:text-white",
                   )}
                 >
                   <span
@@ -172,7 +172,7 @@ const AppHeader = () => {
               href={isAdmin ? "/notifications/a/" + id : "/notifications/u/" + id}
               className={cn(
                 "relative flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition",
-                "bg-white/20 hover:bg-white/30 text-black/85 hover:text-black",
+                "bg-emerald-50 hover:bg-emerald-100 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white",
               )}
             >
               <Bell className="h-4 w-4" />
@@ -188,7 +188,7 @@ const AppHeader = () => {
               href={isAdmin ? "/profile/" + id : "/profile/" + id}
               className={cn(
                 "flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold transition",
-                "bg-white/20 hover:bg-white/30 text-black/85 hover:text-black",
+                "bg-emerald-50 hover:bg-emerald-100 text-slate-700 hover:text-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white",
               )}
             >
               <User className="h-4 w-4" />
@@ -218,8 +218,8 @@ const AppHeader = () => {
                 href={item.href}
                 className={cn(
                   "whitespace-nowrap rounded-2xl px-4 py-2 text-sm font-semibold transition",
-                  "bg-white/15 text-black/70 hover:bg-white/25",
-                  active && "bg-white/35 text-black/95",
+                  "bg-emerald-50 text-slate-700 hover:bg-emerald-100 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+                  active && "bg-emerald-100 text-slate-900 dark:bg-slate-700 dark:text-white",
                 )}
               >
                 <span className="mr-2 inline-flex align-middle">
