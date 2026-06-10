@@ -1,23 +1,34 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useUserInfo } from "@/helpers/use-user";
-import { useWalletBalance, useWalletActions } from "@/hooks/wallet";
-import { useWalletTransactions } from "@/hooks/wallet-transaction";
+import React, { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ArrowDownToLine, ShieldAlert, Wallet, X } from "lucide-react";
+import { toast } from "sonner";
+import api from "@/api/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { Wallet, ArrowDownToLine, ShieldAlert, X } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import GamesSelect, { type GameOption } from "@/features/platforms/ui/select";
+import { useUserInfo } from "@/helpers/use-user";
+import { useWalletActions, useWalletBalance } from "@/hooks/wallet";
+import { useWalletTransactions } from "@/hooks/wallet-transaction";
 
 type ReceiveType = "lightning" | "onchain";
+type DepositTab = "pointsmate" | "pixpay";
+type PixPayMethod = "Cash App" | "Venmo" | "PayPal" | "Visa / Debit";
 
 const RECEIVE_TYPE_OPTIONS: { value: ReceiveType; label: string }[] = [
   { value: "lightning", label: "Lightning" },
   { value: "onchain", label: "On-chain" },
+];
+
+const PIX_PAY_METHODS: PixPayMethod[] = [
+  "Cash App",
+  "Venmo",
+  "PayPal",
+  "Visa / Debit",
 ];
 
 const MIN_DEPOSIT = 1;
@@ -50,6 +61,7 @@ export default function DepositGate({
         : false;
 
   const [dismissed, setDismissed] = useState(false);
+  const [activeTab, setActiveTab] = useState<DepositTab>("pointsmate");
 
   const [form, setForm] = useState({
     amount: "",
@@ -58,13 +70,31 @@ export default function DepositGate({
     game_id: "",
     game_name: "",
   });
-
   const [amountError, setAmountError] = useState("");
-
   const [depositCreated, setDepositCreated] = useState<{
     address?: string;
     magic_link?: string;
     amount?: string;
+  } | null>(null);
+
+  const [pixPayForm, setPixPayForm] = useState({
+    amount: "",
+    method: PIX_PAY_METHODS[0] as PixPayMethod,
+    gameUsername: "",
+    game_id: "",
+    game_name: "",
+  });
+  const [pixPayErrors, setPixPayErrors] = useState<{
+    amount?: string;
+    gameUsername?: string;
+  }>({});
+  const [pixPayPending, setPixPayPending] = useState(false);
+  const [pixPayCreated, setPixPayCreated] = useState<{
+    orderId?: string;
+    paymentUrl?: string;
+    amount?: string;
+    method?: PixPayMethod;
+    gameUsername?: string;
   } | null>(null);
 
   const spendable = Number(
@@ -75,7 +105,6 @@ export default function DepositGate({
 
   const isLoading = balanceLoading;
 
-  // Poll every 6 seconds while gate is visible so it auto-closes on deposit arrival
   useEffect(() => {
     if (!id || isAdmin || dismissed) return;
     const interval = setInterval(() => {
@@ -84,7 +113,6 @@ export default function DepositGate({
     return () => clearInterval(interval);
   }, [id, isAdmin, dismissed, queryClient]);
 
-  // Remind every 5 minutes after dismissal if still no deposits
   const remindedRef = useRef(false);
   useEffect(() => {
     if (!id || isAdmin || !dismissed || hasDeposits) return;
@@ -105,13 +133,11 @@ export default function DepositGate({
     return () => clearInterval(interval);
   }, [id, isAdmin, dismissed, hasDeposits]);
 
-  // Admins and unauthenticated users bypass the gate entirely
   if (!id || isAdmin) return <>{children}</>;
 
   const needsDeposit = !isLoading && spendable < MIN_DEPOSIT;
   const showGate = !dismissed && (isLoading || needsDeposit);
 
-  // Gate dismissed or deposit satisfied — render children normally
   if (!showGate) return <>{children}</>;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,29 +174,99 @@ export default function DepositGate({
     }
   };
 
+  const handlePixPaySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPixPayErrors({});
+
+    const amount = Number(pixPayForm.amount);
+    const nextErrors: { amount?: string; gameUsername?: string } = {};
+
+    if (!Number.isFinite(amount) || amount < MIN_DEPOSIT) {
+      nextErrors.amount = `Minimum deposit is $${MIN_DEPOSIT}.`;
+    }
+
+    if (!pixPayForm.gameUsername.trim()) {
+      nextErrors.gameUsername = "Game username is required.";
+    }
+
+    if (nextErrors.amount || nextErrors.gameUsername) {
+      setPixPayErrors(nextErrors);
+      return;
+    }
+
+    const paymentWindow =
+      typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+
+    setPixPayPending(true);
+
+    try {
+      const response = await api.post("/orders/pix-pay", {
+        amount,
+        method: pixPayForm.method,
+        gameUsername: pixPayForm.gameUsername.trim(),
+        gameName: pixPayForm.game_name || undefined,
+      });
+
+      const order = response?.data?.data?.order;
+      const paymentUrl =
+        response?.data?.paymentUrl ??
+        response?.data?.data?.paymentUrl ??
+        order?.payment_url ??
+        "";
+
+      if (paymentWindow) {
+        if (paymentUrl) {
+          paymentWindow.location.href = paymentUrl;
+        } else {
+          paymentWindow.close();
+        }
+      } else if (paymentUrl) {
+        window.open(paymentUrl, "_blank");
+      }
+
+      setPixPayCreated({
+        orderId: response?.data?.orderId ?? order?.id,
+        paymentUrl,
+        amount: amount.toFixed(2),
+        method: pixPayForm.method,
+        gameUsername: pixPayForm.gameUsername.trim(),
+      });
+
+      toast.success("PixPay order created. Complete payment in the new tab.");
+    } catch (error: any) {
+      if (paymentWindow && !paymentWindow.closed) {
+        paymentWindow.close();
+      }
+
+      toast.error(
+        error?.response?.data?.error?.message ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to create PixPay order.",
+      );
+    } finally {
+      setPixPayPending(false);
+    }
+  };
+
   return (
     <>
-      {/* Page content visible (blurred) behind the modal */}
       <div className="pointer-events-none select-none opacity-25 blur-sm">
         {children}
       </div>
 
-      {/* Full-screen backdrop + modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-sm">
-        <div className="relative w-full max-w-md rounded-2xl border border-white/10 bg-card p-6 shadow-2xl space-y-5">
-
-          {/* Dismiss button */}
+        <div className="relative w-full max-w-md space-y-5 rounded-2xl border border-white/10 bg-card p-6 shadow-2xl">
           {!isLoading && (
             <button
               onClick={() => setDismissed(true)}
-              className="absolute top-4 right-4 rounded-lg p-1.5 text-muted-foreground hover:text-foreground hover:bg-white/10 transition-colors"
+              className="absolute right-4 top-4 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-white/10 hover:text-foreground"
               aria-label="Dismiss and continue to dashboard"
             >
               <X className="size-4" />
             </button>
           )}
 
-          {/* Header */}
           <div className="flex flex-col items-center gap-3 text-center">
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
               {isLoading ? (
@@ -180,7 +276,7 @@ export default function DepositGate({
               )}
             </div>
             <h2 className="text-xl font-semibold text-foreground">
-              {isLoading ? "Loading your wallet…" : "Deposit Required"}
+              {isLoading ? "Loading your wallet..." : "Deposit Required"}
             </h2>
             {!isLoading && (
               <>
@@ -200,141 +296,347 @@ export default function DepositGate({
                 <div className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
                   <ShieldAlert className="size-4 shrink-0" />
                   {spendable > 0
-                    ? `Current balance: $${spendable.toFixed(2)} — below the $${MIN_DEPOSIT} minimum.`
-                    : `Your account balance is $0.00. Deposit $${MIN_DEPOSIT}–$${MAX_DEPOSIT_HINT} to unlock access.`}
+                    ? `Current balance: $${spendable.toFixed(2)} - below the $${MIN_DEPOSIT} minimum.`
+                    : `Your account balance is $0.00. Deposit $${MIN_DEPOSIT}-$${MAX_DEPOSIT_HINT} to unlock access.`}
                 </div>
               </>
             )}
           </div>
 
-          {/* Body — only when data loaded */}
           {!isLoading && (
-            <>
-              {depositCreated ? (
-                <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-sm font-semibold text-foreground">
-                    Deposit address created!
-                  </p>
-                  {depositCreated.address && (
-                    <div>
-                      <div className="text-[11px] text-muted-foreground">Address</div>
-                      <div className="mt-1 break-all rounded-lg bg-black/20 p-2 font-mono text-xs text-foreground">
-                        {depositCreated.address}
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as DepositTab)}
+              className="space-y-4"
+            >
+              <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-white/5 p-1">
+                <TabsTrigger value="pointsmate" className="rounded-lg">
+                  PointsMate
+                </TabsTrigger>
+                <TabsTrigger value="pixpay" className="rounded-lg">
+                  PixPay
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pointsmate" className="space-y-4">
+                {depositCreated ? (
+                  <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm font-semibold text-foreground">
+                      Deposit address created!
+                    </p>
+                    {depositCreated.address && (
+                      <div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Address
+                        </div>
+                        <div className="mt-1 break-all rounded-lg bg-black/20 p-2 font-mono text-xs text-foreground">
+                          {depositCreated.address}
+                        </div>
+                      </div>
+                    )}
+                    {depositCreated.magic_link && (
+                      <div>
+                        <div className="mb-1.5 text-[11px] text-muted-foreground">
+                          Magic Link
+                        </div>
+                        <a
+                          href={depositCreated.magic_link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+                        >
+                          <ArrowDownToLine className="size-4" />
+                          Open Deposit Link
+                        </a>
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Once your funds arrive your dashboard will unlock automatically.
+                    </p>
+                    <Button
+                      className="w-full rounded-xl"
+                      onClick={() => {
+                        queryClient.invalidateQueries({
+                          queryKey: ["wallet-balance", id],
+                        });
+                      }}
+                    >
+                      I&apos;ve deposited - Refresh
+                    </Button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>
+                        Amount{" "}
+                        <span className="font-normal text-muted-foreground">
+                          (min ${MIN_DEPOSIT})
+                        </span>
+                      </Label>
+                      <Input
+                        value={form.amount}
+                        type="number"
+                        min={MIN_DEPOSIT}
+                        step="0.01"
+                        disabled={walletActions.isPending}
+                        onChange={(e) => {
+                          setAmountError("");
+                          setForm((prev) => ({ ...prev, amount: e.target.value }));
+                        }}
+                        placeholder={`e.g. $${MAX_DEPOSIT_HINT}.00`}
+                        className="rounded-xl"
+                      />
+                      {amountError && (
+                        <p className="text-xs text-destructive">{amountError}</p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Deposit Type</Label>
+                      <select
+                        value={form.type}
+                        disabled={walletActions.isPending}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            type: e.target.value as ReceiveType,
+                          }))
+                        }
+                        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none"
+                      >
+                        {RECEIVE_TYPE_OPTIONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Game (optional)</Label>
+                      <GamesSelect
+                        value={form.game_id}
+                        disabled={walletActions.isPending}
+                        onChange={(game: GameOption | null) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            game_id: game?.id ?? "",
+                            game_name: game?.name ?? "",
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      className="w-full rounded-xl bg-emerald-500 text-black hover:bg-emerald-400"
+                      disabled={walletActions.isPending}
+                    >
+                      {walletActions.isPending ? (
+                        <Spinner className="mr-2 size-4" />
+                      ) : (
+                        <ArrowDownToLine className="mr-2 size-4" />
+                      )}
+                      {walletActions.isPending
+                        ? "Creating..."
+                        : "Create Deposit Address"}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDismissed(true)}
+                      className="w-full py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      Skip for now and continue to dashboard
+                    </button>
+                  </form>
+                )}
+              </TabsContent>
+
+              <TabsContent value="pixpay" className="space-y-4">
+                {pixPayCreated ? (
+                  <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm font-semibold text-foreground">
+                      PixPay order created!
+                    </p>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Method
+                        </div>
+                        <div className="mt-1 rounded-lg bg-black/20 p-2 text-xs text-foreground">
+                          {pixPayCreated.method}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] text-muted-foreground">
+                          Amount
+                        </div>
+                        <div className="mt-1 rounded-lg bg-black/20 p-2 text-xs text-foreground">
+                          ${pixPayCreated.amount}
+                        </div>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <div className="text-[11px] text-muted-foreground">
+                          Game Username
+                        </div>
+                        <div className="mt-1 rounded-lg bg-black/20 p-2 text-xs text-foreground">
+                          {pixPayCreated.gameUsername}
+                        </div>
                       </div>
                     </div>
-                  )}
-                  {depositCreated.magic_link && (
-                    <div>
-                      <div className="text-[11px] text-muted-foreground mb-1.5">Magic Link</div>
+
+                    <p className="text-xs text-muted-foreground">
+                      Finish the payment in the new tab. PixPay stays pending
+                      until an admin verifies the payment.
+                    </p>
+
+                    {pixPayCreated.paymentUrl ? (
                       <a
-                        href={depositCreated.magic_link}
+                        href={pixPayCreated.paymentUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
                       >
                         <ArrowDownToLine className="size-4" />
-                        Open Deposit Link
+                        Open PixPay
                       </a>
-                    </div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                    Once your funds arrive your dashboard will unlock automatically.
-                  </p>
-                  <Button
-                    className="w-full rounded-xl"
-                    onClick={() => {
-                      queryClient.invalidateQueries({ queryKey: ["wallet-balance", id] });
-                    }}
-                  >
-                    I&apos;ve deposited — Refresh
-                  </Button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>
-                      Amount{" "}
-                      <span className="text-muted-foreground font-normal">
-                        (min ${MIN_DEPOSIT})
-                      </span>
-                    </Label>
-                    <Input
-                      value={form.amount}
-                      type="number"
-                      min={MIN_DEPOSIT}
-                      step="0.01"
-                      disabled={walletActions.isPending}
-                      onChange={(e) => {
-                        setAmountError("");
-                        setForm((p) => ({ ...p, amount: e.target.value }));
-                      }}
-                      placeholder={`e.g. $${MAX_DEPOSIT_HINT}.00`}
-                      className="rounded-xl"
-                    />
-                    {amountError && (
-                      <p className="text-xs text-destructive">{amountError}</p>
-                    )}
-                  </div>
+                    ) : null}
 
-                  <div className="space-y-2">
-                    <Label>Deposit Type</Label>
-                    <select
-                      value={form.type}
-                      disabled={walletActions.isPending}
-                      onChange={(e) =>
-                        setForm((p) => ({
-                          ...p,
-                          type: e.target.value as ReceiveType,
-                        }))
-                      }
-                      className="h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none"
+                    <button
+                      type="button"
+                      onClick={() => setDismissed(true)}
+                      className="w-full py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
                     >
-                      {RECEIVE_TYPE_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
+                      Continue to dashboard
+                    </button>
                   </div>
+                ) : (
+                  <form onSubmit={handlePixPaySubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>
+                        Amount{" "}
+                        <span className="font-normal text-muted-foreground">
+                          (min ${MIN_DEPOSIT})
+                        </span>
+                      </Label>
+                      <Input
+                        value={pixPayForm.amount}
+                        type="number"
+                        min={MIN_DEPOSIT}
+                        step="0.01"
+                        disabled={pixPayPending}
+                        onChange={(e) => {
+                          setPixPayErrors((prev) => ({
+                            ...prev,
+                            amount: undefined,
+                          }));
+                          setPixPayForm((prev) => ({
+                            ...prev,
+                            amount: e.target.value,
+                          }));
+                        }}
+                        placeholder={`e.g. $${MAX_DEPOSIT_HINT}.00`}
+                        className="rounded-xl"
+                      />
+                      {pixPayErrors.amount && (
+                        <p className="text-xs text-destructive">
+                          {pixPayErrors.amount}
+                        </p>
+                      )}
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Game (optional)</Label>
-                    <GamesSelect
-                      value={form.game_id}
-                      disabled={walletActions.isPending}
-                      onChange={(game: GameOption | null) =>
-                        setForm((p) => ({
-                          ...p,
-                          game_id: game?.id ?? "",
-                          game_name: game?.name ?? "",
-                        }))
-                      }
-                    />
-                  </div>
+                    <div className="space-y-2">
+                      <Label>Payment Method</Label>
+                      <select
+                        value={pixPayForm.method}
+                        disabled={pixPayPending}
+                        onChange={(e) =>
+                          setPixPayForm((prev) => ({
+                            ...prev,
+                            method: e.target.value as PixPayMethod,
+                          }))
+                        }
+                        className="h-10 w-full rounded-xl border border-border bg-background px-3 text-foreground outline-none"
+                      >
+                        {PIX_PAY_METHODS.map((method) => (
+                          <option key={method} value={method}>
+                            {method}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full rounded-xl bg-emerald-500 text-black hover:bg-emerald-400"
-                    disabled={walletActions.isPending}
-                  >
-                    {walletActions.isPending ? (
-                      <Spinner className="size-4 mr-2" />
-                    ) : (
-                      <ArrowDownToLine className="size-4 mr-2" />
-                    )}
-                    {walletActions.isPending ? "Creating..." : "Create Deposit Address"}
-                  </Button>
+                    <div className="space-y-2">
+                      <Label>Game Username</Label>
+                      <Input
+                        value={pixPayForm.gameUsername}
+                        disabled={pixPayPending}
+                        onChange={(e) => {
+                          setPixPayErrors((prev) => ({
+                            ...prev,
+                            gameUsername: undefined,
+                          }));
+                          setPixPayForm((prev) => ({
+                            ...prev,
+                            gameUsername: e.target.value,
+                          }));
+                        }}
+                        placeholder="Enter your in-game username"
+                        className="rounded-xl"
+                      />
+                      {pixPayErrors.gameUsername && (
+                        <p className="text-xs text-destructive">
+                          {pixPayErrors.gameUsername}
+                        </p>
+                      )}
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setDismissed(true)}
-                    className="w-full text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
-                  >
-                    Skip for now and continue to dashboard
-                  </button>
-                </form>
-              )}
-            </>
+                    <div className="space-y-2">
+                      <Label>Game (optional)</Label>
+                      <GamesSelect
+                        value={pixPayForm.game_id}
+                        disabled={pixPayPending}
+                        onChange={(game: GameOption | null) =>
+                          setPixPayForm((prev) => ({
+                            ...prev,
+                            game_id: game?.id ?? "",
+                            game_name: game?.name ?? "",
+                          }))
+                        }
+                      />
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      You&apos;ll be sent to PixPay in a new tab. Your balance
+                      updates after admin approval.
+                    </p>
+
+                    <Button
+                      type="submit"
+                      className="w-full rounded-xl bg-emerald-500 text-black hover:bg-emerald-400"
+                      disabled={pixPayPending}
+                    >
+                      {pixPayPending ? (
+                        <Spinner className="mr-2 size-4" />
+                      ) : (
+                        <ArrowDownToLine className="mr-2 size-4" />
+                      )}
+                      {pixPayPending ? "Creating..." : "Pay with PixPay"}
+                    </Button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDismissed(true)}
+                      className="w-full py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      Skip for now and continue to dashboard
+                    </button>
+                  </form>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
         </div>
       </div>

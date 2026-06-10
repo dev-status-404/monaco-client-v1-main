@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import api from "@/api/axios";
 import SectionTitle from "@/components/common/section-title";
 import { GlobalDataTable } from "@/components/common/global-table";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +45,8 @@ import {
 import { toast } from "sonner";
 
 type ReceiveType = "lightning" | "onchain";
+type DepositMethodTab = "pointsmate" | "pixpay";
+type PixPayMethod = "Cash App" | "Venmo" | "PayPal" | "Visa / Debit";
 
 type DepositRow = {
   id: string;
@@ -81,6 +85,13 @@ const STATUS_OPTIONS: { value: DepositStatus; label: string }[] = [
 const RECEIVE_TYPE_OPTIONS: { value: ReceiveType; label: string }[] = [
   { value: "lightning", label: "Lightning" },
   { value: "onchain", label: "On-chain" },
+];
+
+const PIX_PAY_METHODS: PixPayMethod[] = [
+  "Cash App",
+  "Venmo",
+  "PayPal",
+  "Visa / Debit",
 ];
 
 const DATE_OPTIONS: {
@@ -180,6 +191,8 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
   const walletActions = useWalletActions();
 
   const [open, setOpen] = useState(false);
+  const [activeDepositTab, setActiveDepositTab] =
+    useState<DepositMethodTab>("pointsmate");
   const [filters, setFilters] = useState<{
     status: DepositStatus;
     date: "all" | "today" | "last7" | "last30";
@@ -211,6 +224,14 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
     amount?: string;
     status?: string;
   } | null>(null);
+  const [pixPayForm, setPixPayForm] = useState({
+    amount: "",
+    method: PIX_PAY_METHODS[0] as PixPayMethod,
+    gameUsername: "",
+    game_id: "",
+    game_name: "",
+  });
+  const [pixPayPending, setPixPayPending] = useState(false);
 
   const games = useMemo(() => {
     const rows = gamesData?.data ?? gamesData?.rows ?? gamesData?.games ?? [];
@@ -365,6 +386,79 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
           error?.message ||
           "Deposit request failed.",
       );
+    }
+  };
+
+  const submitPixPay = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!id) {
+      toast.error("User not found.");
+      return;
+    }
+
+    const amount = Number(pixPayForm.amount);
+    if (!Number.isFinite(amount) || amount < 1) {
+      toast.error("Enter a valid amount.");
+      return;
+    }
+
+    if (!pixPayForm.gameUsername.trim()) {
+      toast.error("Game username is required.");
+      return;
+    }
+
+    const paymentWindow =
+      typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+
+    setPixPayPending(true);
+
+    try {
+      const response = await api.post("/orders/pix-pay", {
+        amount,
+        method: pixPayForm.method,
+        gameUsername: pixPayForm.gameUsername.trim(),
+        gameName: pixPayForm.game_name || undefined,
+      });
+
+      const paymentUrl =
+        response?.data?.paymentUrl ??
+        response?.data?.data?.paymentUrl ??
+        response?.data?.data?.order?.payment_url ??
+        "";
+
+      if (paymentWindow) {
+        if (paymentUrl) {
+          paymentWindow.location.href = paymentUrl;
+        } else {
+          paymentWindow.close();
+        }
+      } else if (paymentUrl) {
+        window.open(paymentUrl, "_blank");
+      }
+
+      setOpen(false);
+      setPixPayForm({
+        amount: "",
+        method: PIX_PAY_METHODS[0],
+        gameUsername: "",
+        game_id: "",
+        game_name: "",
+      });
+      toast.success("PixPay order created. Complete payment in the new tab.");
+    } catch (error: any) {
+      if (paymentWindow && !paymentWindow.closed) {
+        paymentWindow.close();
+      }
+
+      toast.error(
+        error?.response?.data?.error?.message ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "PixPay request failed.",
+      );
+    } finally {
+      setPixPayPending(false);
     }
   };
 
@@ -700,88 +794,233 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
           <DialogHeader>
             <DialogTitle>Create Deposit Address</DialogTitle>
             <DialogDescription className="text-slate-600 dark:text-white/60">
-              Submit the deposit request, then use the generated address or magic link to complete payment.
+              Choose a deposit method, then complete the flow for that payment option.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={submit} className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">
-                Amount
-              </Label>
-              <Input
-                value={form.amount}
-                disabled={walletActions.isPending}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, amount: e.target.value }))
-                }
-                placeholder="Enter amount"
-                className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
-              />
-            </div>
+          <Tabs
+            value={activeDepositTab}
+            onValueChange={(value) =>
+              setActiveDepositTab(value as DepositMethodTab)
+            }
+            className="space-y-4"
+          >
+            <TabsList className="grid h-auto w-full grid-cols-2 rounded-2xl bg-white/60 p-1 dark:bg-white/5">
+              <TabsTrigger value="pointsmate" className="rounded-xl">
+                PointsMate
+              </TabsTrigger>
+              <TabsTrigger value="pixpay" className="rounded-xl">
+                PixPay
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Deposit Type</Label>
-              <select
-                value={form.type}
-                disabled={walletActions.isPending}
-                onChange={(e) => setForm((prev) => ({ ...prev, type: e.target.value as ReceiveType }))}
-                className="h-10 w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 text-slate-900 dark:text-white outline-none"
-              >
-                {RECEIVE_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value} className="bg-white dark:bg-slate-900">
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <TabsContent value="pointsmate">
+              <form onSubmit={submit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Amount
+                  </Label>
+                  <Input
+                    value={form.amount}
+                    disabled={walletActions.isPending}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, amount: e.target.value }))
+                    }
+                    placeholder="Enter amount"
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Game</Label>
-              <GamesSelect
-                value={form.game_id}
-                disabled={walletActions.isPending}
-                onChange={(game: GameOption | null) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    game_id: game?.id ?? "",
-                    game_name: game?.name ?? "",
-                  }))
-                }
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Deposit Type
+                  </Label>
+                  <select
+                    value={form.type}
+                    disabled={walletActions.isPending}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        type: e.target.value as ReceiveType,
+                      }))
+                    }
+                    className="h-10 w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 text-slate-900 dark:text-white outline-none"
+                  >
+                    {RECEIVE_TYPE_OPTIONS.map((option) => (
+                      <option
+                        key={option.value}
+                        value={option.value}
+                        className="bg-white dark:bg-slate-900"
+                      >
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-white/80">Memo</Label>
-              <Input
-                value={form.memo}
-                disabled={walletActions.isPending}
-                onChange={(e) => setForm((prev) => ({ ...prev, memo: e.target.value }))}
-                placeholder="Optional memo"
-                className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Game
+                  </Label>
+                  <GamesSelect
+                    value={form.game_id}
+                    disabled={walletActions.isPending}
+                    onChange={(game: GameOption | null) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        game_id: game?.id ?? "",
+                        game_name: game?.name ?? "",
+                      }))
+                    }
+                  />
+                </div>
 
-            <DialogFooter className="gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="rounded-2xl"
-                onClick={() => setOpen(false)}
-                disabled={walletActions.isPending}
-              >
-                Cancel
-              </Button>
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Memo
+                  </Label>
+                  <Input
+                    value={form.memo}
+                    disabled={walletActions.isPending}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, memo: e.target.value }))
+                    }
+                    placeholder="Optional memo"
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white"
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                className="rounded-2xl"
-                disabled={walletActions.isPending}
-              >
-                {walletActions.isPending ? "Creating..." : "Create"}
-              </Button>
-            </DialogFooter>
-          </form>
+                <DialogFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="rounded-2xl"
+                    onClick={() => setOpen(false)}
+                    disabled={walletActions.isPending}
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    className="rounded-2xl"
+                    disabled={walletActions.isPending}
+                  >
+                    {walletActions.isPending ? "Creating..." : "Create"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="pixpay">
+              <form onSubmit={submitPixPay} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Amount
+                  </Label>
+                  <Input
+                    value={pixPayForm.amount}
+                    disabled={pixPayPending}
+                    onChange={(e) =>
+                      setPixPayForm((prev) => ({
+                        ...prev,
+                        amount: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter amount"
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Payment Method
+                  </Label>
+                  <select
+                    value={pixPayForm.method}
+                    disabled={pixPayPending}
+                    onChange={(e) =>
+                      setPixPayForm((prev) => ({
+                        ...prev,
+                        method: e.target.value as PixPayMethod,
+                      }))
+                    }
+                    className="h-10 w-full rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 px-3 text-slate-900 dark:text-white outline-none"
+                  >
+                    {PIX_PAY_METHODS.map((method) => (
+                      <option
+                        key={method}
+                        value={method}
+                        className="bg-white dark:bg-slate-900"
+                      >
+                        {method}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Game Username
+                  </Label>
+                  <Input
+                    value={pixPayForm.gameUsername}
+                    disabled={pixPayPending}
+                    onChange={(e) =>
+                      setPixPayForm((prev) => ({
+                        ...prev,
+                        gameUsername: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter your in-game username"
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Game
+                  </Label>
+                  <GamesSelect
+                    value={pixPayForm.game_id}
+                    disabled={pixPayPending}
+                    onChange={(game: GameOption | null) =>
+                      setPixPayForm((prev) => ({
+                        ...prev,
+                        game_id: game?.id ?? "",
+                        game_name: game?.name ?? "",
+                      }))
+                    }
+                  />
+                </div>
+
+                <p className="text-xs text-slate-600 dark:text-white/60">
+                  This opens PixPay in a new tab. Credits are applied after admin
+                  verification.
+                </p>
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="rounded-2xl"
+                    onClick={() => setOpen(false)}
+                    disabled={pixPayPending}
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    className="rounded-2xl"
+                    disabled={pixPayPending}
+                  >
+                    {pixPayPending ? "Creating..." : "Pay with PixPay"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </div>
