@@ -45,7 +45,7 @@ import {
 import { toast } from "sonner";
 
 type ReceiveType = "lightning" | "onchain";
-type DepositMethodTab = "pointsmate" | "pixpay";
+type DepositMethodTab = "pointsmate" | "pixpay" | "tierlock";
 type PixPayMethod = "Cash App" | "Venmo" | "PayPal" | "Visa / Debit";
 
 type DepositRow = {
@@ -58,7 +58,7 @@ type DepositRow = {
   game_id?: string | null;
   game_name?: string | null;
   address?: string | null;
-  magic_link?: string | null;
+  payment_url?: string | null;
 };
 
 type DepositStatus =
@@ -93,6 +93,7 @@ const PIX_PAY_METHODS: PixPayMethod[] = [
   "PayPal",
   "Visa / Debit",
 ];
+const TIERLOCK_BUY_NOW_URL = "https://app.tierlock.com/1EIs9BPI";
 
 const DATE_OPTIONS: {
   value: "all" | "today" | "last7" | "last30";
@@ -218,9 +219,9 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
   });
   const [latestDeposit, setLatestDeposit] = useState<{
     transactionId?: string;
-    pmTransactionId?: string;
+    orderId?: string;
     address?: string;
-    magic_link?: string;
+    payment_url?: string;
     amount?: string;
     status?: string;
   } | null>(null);
@@ -274,7 +275,14 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       game_id: row.game_id ?? row.game?.id ?? null,
       game_name: row.game_name ?? row.game?.name ?? null,
       address: row.address ?? row.meta?.address ?? null,
-      magic_link: row.magic_link ?? row.magicLink ?? row.meta?.magicLink ?? null,
+      payment_url:
+        row.payment_url ??
+        row.paymentUrl ??
+        row.magic_link ??
+        row.magicLink ??
+        row.meta?.paymentUrl ??
+        row.meta?.magicLink ??
+        null,
     }));
   }, [data]);
 
@@ -292,7 +300,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
         row.status,
         row.api_status,
         row.address,
-        row.magic_link,
+        row.payment_url,
         row.game_name,
       ]
         .filter(Boolean)
@@ -362,11 +370,14 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       return;
     }
 
+    const isTierlock = activeDepositTab === "tierlock";
+
     try {
       const response = await walletActions.createDeposit({
         userId: String(id),
         amount,
-        type: form.type,
+        type: isTierlock ? "tierlock" : form.type,
+        paymentChannel: isTierlock ? "tierlock" : undefined,
         memo: form.memo || undefined,
         gameId: form.game_id || undefined,
         gameName: form.game_name || undefined,
@@ -376,9 +387,16 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       setLatestDeposit(result);
       setOpen(false);
       setForm({ amount: "", type: "lightning", memo: "", game_id: "", game_name: "" });
-      toast.success("Deposit address created.");
+      const paymentUrl = result?.payment_url ?? result?.paymentUrl;
+      toast.success(
+        paymentUrl ? "Tierlock checkout created." : "Deposit address created.",
+      );
       queryClient.invalidateQueries({ queryKey: ["wallet-balance", id] });
       queryClient.invalidateQueries({ queryKey: ["wallet-transactions-user", id] });
+
+      if (paymentUrl && typeof window !== "undefined") {
+        window.location.href = paymentUrl;
+      }
     } catch (error: any) {
       toast.error(
         error?.response?.data?.error?.message ||
@@ -488,7 +506,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
 
           <Button className="rounded-2xl" onClick={() => setOpen(true)}>
             <Plus className="mr-2 size-4" />
-            Create Deposit Address
+            Complete Deposit
           </Button>
         </div>
       </div>
@@ -542,9 +560,9 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
         <div className="gradient-card-soft p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-white">Latest Deposit Address</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-white">Latest Deposit</div>
               <div className="text-xs text-slate-600 dark:text-white/60">
-                Use the generated address or magic link. Status will update automatically when webhooks are received.
+                Use the generated address or payment link. Status will update automatically when webhooks are received.
               </div>
             </div>
             <Badge variant={statusVariant(latestDeposit.status)}>{latestDeposit.status ?? "PENDING"}</Badge>
@@ -567,10 +585,10 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 lg:col-span-3">
-              <div className="text-[11px] text-slate-600 dark:text-white/60">Magic Link</div>
-              {latestDeposit.magic_link ? (
+              <div className="text-[11px] text-slate-600 dark:text-white/60">Deposit Link</div>
+              {latestDeposit.payment_url ? (
                 <a
-                  href={latestDeposit.magic_link}
+                  href={latestDeposit.payment_url}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
@@ -648,7 +666,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
                 <Input
                   value={filters.search}
                   onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                  placeholder="Address, magic link, amount..."
+                  placeholder="Checkout link, amount, game..."
                   className="h-10 rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-10 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
                 />
               </div>
@@ -762,12 +780,12 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
               ),
           },
           {
-            key: "magic_link",
-            title: "Magic Link",
+            key: "payment_url",
+            title: "Deposit Link",
             render: (row) =>
-              row.magic_link ? (
+              row.payment_url ? (
                 <a
-                  href={row.magic_link}
+                  href={row.payment_url}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500 transition-colors"
@@ -805,12 +823,15 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
             }
             className="space-y-4"
           >
-            <TabsList className="grid h-auto w-full grid-cols-2 rounded-2xl bg-white/60 p-1 dark:bg-white/5">
+            <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl bg-white/60 p-1 dark:bg-white/5">
               <TabsTrigger value="pointsmate" className="rounded-xl">
                 PointsMate
               </TabsTrigger>
               <TabsTrigger value="pixpay" className="rounded-xl">
                 PixPay
+              </TabsTrigger>
+              <TabsTrigger value="tierlock" className="rounded-xl">
+                Tierlock
               </TabsTrigger>
             </TabsList>
 
@@ -1019,6 +1040,54 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
                   </Button>
                 </DialogFooter>
               </form>
+            </TabsContent>
+
+            <TabsContent value="tierlock">
+              <div className="space-y-4">
+                <p className="text-sm text-slate-700 dark:text-white/80">
+                  Use Tierlock&apos;s hosted checkout directly.
+                </p>
+
+                <a
+                  href={TIERLOCK_BUY_NOW_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: "inline-block",
+                    backgroundColor: "#0070f3",
+                    color: "#ffffff",
+                    padding: "12px 20px",
+                    textDecoration: "none",
+                    borderRadius: "4px",
+                    fontFamily: "sans-serif",
+                    fontWeight: 500,
+                    textAlign: "center",
+                  }}
+                >
+                  Buy Now
+                </a>
+
+                <div className="rounded-xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
+                  {TIERLOCK_BUY_NOW_URL}
+                </div>
+
+                <p className="text-xs text-slate-600 dark:text-white/60">
+                  This button opens the Tierlock checkout page directly. Your
+                  balance updates after the Tierlock payment webhook confirms
+                  success.
+                </p>
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="rounded-2xl"
+                    onClick={() => setOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>

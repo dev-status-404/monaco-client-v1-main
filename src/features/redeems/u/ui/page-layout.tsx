@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -38,7 +39,7 @@ import {
 } from "lucide-react";
 import { useMyDepositedGames } from "@/hooks/deposit";
 
-type PaymentMethod = "pointsmate";
+type PaymentMethod = "pointsmate" | "tierlock" | "pixpay";
 
 type RedeemRow = {
   id: string;
@@ -90,10 +91,6 @@ function statusVariant(status?: string) {
   return "destructive";
 }
 
-const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
-  { value: "pointsmate", label: "Pointsmate" },
-];
-
 const STATUS_OPTIONS: { value: RedeemStatus; label: string }[] = [
   { value: "all", label: "All" },
   { value: "requested", label: "Requested" },
@@ -120,6 +117,8 @@ const DATE_OPTIONS: {
 const METHOD_FILTERS: { value: "all" | PaymentMethod; label: string }[] = [
   { value: "all", label: "All methods" },
   { value: "pointsmate", label: "Pointsmate" },
+  { value: "tierlock", label: "Tierlock" },
+  { value: "pixpay", label: "PixPay" },
 ];
 
 function startOfDayISO(d: Date) {
@@ -323,7 +322,13 @@ export default function RedeemsLayout() {
 
       queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
       queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
-      alert("Withdrawal approved and payout released.");
+      alert(
+        String(row.method || "").toLowerCase() === "tierlock"
+          ? "Payout link sent. Waiting for customer approval."
+          : String(row.method || "").toLowerCase() === "pixpay"
+            ? "PixPay payout approved and marked as completed."
+          : "Withdrawal approved and payout released.",
+      );
     } catch (err: any) {
       alert(
         err?.response?.data?.error?.message ||
@@ -881,7 +886,7 @@ export default function RedeemsLayout() {
           },
           {
             key: "destination",
-            title: "Wallet Address",
+            title: "Destination",
             render: (row) => {
               const addr = row.destination ?? "";
               if (!addr || addr === "-") return "-";
@@ -994,6 +999,7 @@ export default function RedeemsLayout() {
                 <Input
                   value={requestForm.amount}
                   disabled={isSubmitting}
+                  className="text-white placeholder:text-white/60"
                   onChange={(e) =>
                     setRequestForm((p) => ({ ...p, amount: e.target.value }))
                   }
@@ -1001,25 +1007,87 @@ export default function RedeemsLayout() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Payment Method</Label>
-                <Input value="Pointsmate" disabled />
-              </div>
+              <Tabs
+                value={requestForm.payment_method}
+                onValueChange={(value) =>
+                  setRequestForm((p) => ({
+                    ...p,
+                    payment_method: value as PaymentMethod,
+                    destination: "",
+                  }))
+                }
+                className="space-y-4"
+              >
+                <div className="space-y-2">
+                  <Label>Payment Method</Label>
+                  <TabsList className="grid h-auto w-full grid-cols-3 rounded-2xl bg-white/60 p-1 dark:bg-white/5">
+                    <TabsTrigger value="pointsmate" className="rounded-xl">
+                      PointsMate
+                    </TabsTrigger>
+                    <TabsTrigger value="tierlock" className="rounded-xl">
+                      Tierlock
+                    </TabsTrigger>
+                    <TabsTrigger value="pixpay" className="rounded-xl">
+                      PixPay
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
 
-              <div className="space-y-2">
-                <Label>Wallet Address</Label>
-                <Input
-                  value={requestForm.destination}
-                  disabled={isSubmitting}
-                  onChange={(e) =>
-                    setRequestForm((p) => ({
-                      ...p,
-                      destination: e.target.value,
-                    }))
-                  }
-                  placeholder="Enter payout wallet address"
-                />
-              </div>
+                <TabsContent value="pointsmate" className="space-y-2">
+                  <Label>Wallet Address</Label>
+                  <Input
+                    value={requestForm.destination}
+                    disabled={isSubmitting}
+                    className="text-white placeholder:text-white/60"
+                    onChange={(e) =>
+                      setRequestForm((p) => ({
+                        ...p,
+                        destination: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter payout wallet address"
+                  />
+                </TabsContent>
+
+                <TabsContent value="tierlock" className="space-y-2">
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={requestForm.destination}
+                    disabled={isSubmitting}
+                    className="text-white placeholder:text-white/60"
+                    onChange={(e) =>
+                      setRequestForm((p) => ({
+                        ...p,
+                        destination: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter payout phone number"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Tierlock sends the customer a payout approval link by SMS,
+                    then updates status through payout webhooks.
+                  </p>
+                </TabsContent>
+
+                <TabsContent value="pixpay" className="space-y-2">
+                  <Label>Payment Details</Label>
+                  <Input
+                    value={requestForm.destination}
+                    disabled={isSubmitting}
+                    className="text-white placeholder:text-white/60"
+                    onChange={(e) =>
+                      setRequestForm((p) => ({
+                        ...p,
+                        destination: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter Cash App, Venmo, PayPal, or other PixPay payout details"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    PixPay redeems are handled manually by admin approval.
+                  </p>
+                </TabsContent>
+              </Tabs>
 
               <div className="space-y-2">
                 <Label>Select Platform</Label>

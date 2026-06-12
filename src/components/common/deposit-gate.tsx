@@ -16,7 +16,7 @@ import { useWalletActions, useWalletBalance } from "@/hooks/wallet";
 import { useWalletTransactions } from "@/hooks/wallet-transaction";
 
 type ReceiveType = "lightning" | "onchain";
-type DepositTab = "pointsmate" | "pixpay";
+type DepositTab = "pointsmate" | "pixpay" | "tierlock";
 type PixPayMethod = "Cash App" | "Venmo" | "PayPal" | "Visa / Debit";
 
 const RECEIVE_TYPE_OPTIONS: { value: ReceiveType; label: string }[] = [
@@ -30,6 +30,7 @@ const PIX_PAY_METHODS: PixPayMethod[] = [
   "PayPal",
   "Visa / Debit",
 ];
+const TIERLOCK_BUY_NOW_URL = "https://app.tierlock.com/1EIs9BPI";
 
 const MIN_DEPOSIT = 1;
 const MAX_DEPOSIT_HINT = 10;
@@ -73,7 +74,7 @@ export default function DepositGate({
   const [amountError, setAmountError] = useState("");
   const [depositCreated, setDepositCreated] = useState<{
     address?: string;
-    magic_link?: string;
+    payment_url?: string;
     amount?: string;
   } | null>(null);
 
@@ -150,11 +151,14 @@ export default function DepositGate({
       return;
     }
 
+    const isTierlock = activeTab === "tierlock";
+
     try {
       const response = await walletActions.createDeposit({
         userId: String(id),
         amount,
-        type: form.type,
+        type: isTierlock ? "tierlock" : form.type,
+        paymentChannel: isTierlock ? "tierlock" : undefined,
         memo: form.memo || undefined,
         gameId: form.game_id || undefined,
         gameName: form.game_name || undefined,
@@ -162,8 +166,15 @@ export default function DepositGate({
 
       const result = response?.data ?? null;
       setDepositCreated(result);
-      toast.success("Deposit address created! Send funds and refresh when done.");
+      const paymentUrl = result?.payment_url ?? result?.paymentUrl;
+      toast.success(
+        paymentUrl ? "Tierlock checkout created." : "Deposit address created! Send funds and refresh when done.",
+      );
       queryClient.invalidateQueries({ queryKey: ["wallet-balance", id] });
+
+      if (paymentUrl && typeof window !== "undefined") {
+        window.location.href = paymentUrl;
+      }
     } catch (error: any) {
       toast.error(
         error?.response?.data?.error?.message ||
@@ -309,12 +320,15 @@ export default function DepositGate({
               onValueChange={(value) => setActiveTab(value as DepositTab)}
               className="space-y-4"
             >
-              <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-white/5 p-1">
+              <TabsList className="grid h-auto w-full grid-cols-3 rounded-xl bg-white/5 p-1">
                 <TabsTrigger value="pointsmate" className="rounded-lg">
                   PointsMate
                 </TabsTrigger>
                 <TabsTrigger value="pixpay" className="rounded-lg">
                   PixPay
+                </TabsTrigger>
+                <TabsTrigger value="tierlock" className="rounded-lg">
+                  Tierlock
                 </TabsTrigger>
               </TabsList>
 
@@ -322,7 +336,7 @@ export default function DepositGate({
                 {depositCreated ? (
                   <div className="space-y-3 rounded-xl border border-white/10 bg-white/5 p-4">
                     <p className="text-sm font-semibold text-foreground">
-                      Deposit address created!
+                      Deposit created!
                     </p>
                     {depositCreated.address && (
                       <div>
@@ -334,13 +348,13 @@ export default function DepositGate({
                         </div>
                       </div>
                     )}
-                    {depositCreated.magic_link && (
+                    {depositCreated.payment_url && (
                       <div>
                         <div className="mb-1.5 text-[11px] text-muted-foreground">
-                          Magic Link
+                          Deposit Link
                         </div>
                         <a
-                          href={depositCreated.magic_link}
+                          href={depositCreated.payment_url}
                           target="_blank"
                           rel="noreferrer"
                           className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
@@ -635,6 +649,61 @@ export default function DepositGate({
                     </button>
                   </form>
                 )}
+              </TabsContent>
+
+              <TabsContent value="tierlock" className="space-y-4">
+                <div className="space-y-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-sm font-semibold text-foreground">
+                    Tierlock hosted checkout
+                  </p>
+
+                  <a
+                    href={TIERLOCK_BUY_NOW_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: "inline-block",
+                      backgroundColor: "#0070f3",
+                      color: "#ffffff",
+                      padding: "12px 20px",
+                      textDecoration: "none",
+                      borderRadius: "4px",
+                      fontFamily: "sans-serif",
+                      fontWeight: 500,
+                      textAlign: "center",
+                    }}
+                  >
+                    Buy Now
+                  </a>
+
+                  <div className="rounded-lg bg-black/20 p-2 text-xs text-foreground break-all">
+                    {TIERLOCK_BUY_NOW_URL}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    This opens Tierlock directly. Your dashboard unlocks after
+                    the Tierlock payment webhook confirms success.
+                  </p>
+
+                  <Button
+                    className="w-full rounded-xl"
+                    onClick={() => {
+                      queryClient.invalidateQueries({
+                        queryKey: ["wallet-balance", id],
+                      });
+                    }}
+                  >
+                    I&apos;ve paid - Refresh
+                  </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDismissed(true)}
+                    className="w-full py-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                  >
+                    Skip for now and continue to dashboard
+                  </button>
+                </div>
               </TabsContent>
             </Tabs>
           )}

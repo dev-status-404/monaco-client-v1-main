@@ -5,7 +5,8 @@ export const walletApi = {
   createDeposit: async (data: {
     userId: string;
     amount: number | string;
-    type: "lightning" | "onchain" | "on-chain";
+    type?: string;
+    paymentChannel?: string;
     memo?: string;
     referenceId?: string;
     gameId?: string;

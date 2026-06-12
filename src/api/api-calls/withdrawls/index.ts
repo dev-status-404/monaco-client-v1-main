@@ -23,7 +23,7 @@ export const withdrawlsApi = {
       amount: data?.amount,
       address: normalizedDestination,
       destination: normalizedDestination,
-      method: "pointsmate",
+      method: data?.method ?? "pointsmate",
       currency: data?.currency,
       gameId: normalizedGameId,
       gameName: normalizedGameName,
