@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import api from "@/api/axios";
 import SectionTitle from "@/components/common/section-title";
 import { GlobalDataTable } from "@/components/common/global-table";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useUserInfo } from "@/helpers/use-user";
 import GamesSelect, { type GameOption } from "@/features/platforms/ui/select";
 import { useGames } from "@/hooks/games";
+import { useDepositActions, usePaymentOrders, usePaymentProfile } from "@/hooks/deposit";
 import {
   useWalletActions,
   useWalletBalance,
@@ -45,11 +45,13 @@ import {
 import { toast } from "sonner";
 
 type ReceiveType = "lightning" | "onchain";
-type DepositMethodTab = "pointsmate" | "pixpay" | "tierlock";
+type DepositMethodTab = "pointsmate" | "tierlock" | "pixpay";
 type PixPayMethod = "Cash App" | "Venmo" | "PayPal" | "Visa / Debit";
 
 type DepositRow = {
   id: string;
+  source?: "wallet" | "order";
+  provider?: string | null;
   amount: string;
   currency?: string;
   status: string;
@@ -93,7 +95,6 @@ const PIX_PAY_METHODS: PixPayMethod[] = [
   "PayPal",
   "Visa / Debit",
 ];
-const TIERLOCK_BUY_NOW_URL = "https://app.tierlock.com/1EIs9BPI";
 
 const DATE_OPTIONS: {
   value: "all" | "today" | "last7" | "last30";
@@ -140,8 +141,8 @@ function CopyButton({ text }: { text: string }) {
 
 function statusVariant(status?: string) {
   const s = String(status ?? "").toLowerCase();
-  if (["completed", "confirmed"].includes(s)) return "success";
-  if (["pending", "initiated", "processing", "created"].includes(s)) return "primary";
+  if (["completed", "confirmed", "payment approved"].includes(s)) return "success";
+  if (["pending", "pending payment", "initiated", "processing", "created"].includes(s)) return "primary";
   return "destructive";
 }
 
@@ -160,13 +161,24 @@ function formatMoney(amount: string, currency = "USD") {
 }
 
 function isSuccessStatus(s?: string) {
-  return ["completed", "confirmed"].includes(String(s ?? "").toLowerCase());
+  return ["completed", "confirmed", "payment approved"].includes(String(s ?? "").toLowerCase());
 }
 
 function isPendingStatus(s?: string) {
-  return ["pending", "initiated", "processing", "created"].includes(
+  return ["pending", "pending payment", "initiated", "processing", "created"].includes(
     String(s ?? "").toLowerCase(),
   );
+}
+
+function matchesStatusFilter(rowStatus: string, filterStatus: DepositStatus) {
+  if (filterStatus === "all") return true;
+  const normalized = rowStatus.toLowerCase();
+  if (filterStatus === "pending") return isPendingStatus(normalized);
+  if (filterStatus === "completed" || filterStatus === "confirmed") {
+    return isSuccessStatus(normalized);
+  }
+  if (filterStatus === "failed") return normalized === "failed";
+  return normalized === filterStatus;
 }
 
 function isWithinDate(createdAt: string, range: "all" | "today" | "last7" | "last30") {
@@ -190,6 +202,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
   const id = userIdProp ?? currentUserId;
   const { data: gamesData } = useGames({ limit: 200 });
   const walletActions = useWalletActions();
+  const depositActions = useDepositActions();
 
   const [open, setOpen] = useState(false);
   const [activeDepositTab, setActiveDepositTab] =
@@ -219,9 +232,11 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
   });
   const [latestDeposit, setLatestDeposit] = useState<{
     transactionId?: string;
-    orderId?: string;
+    pmTransactionId?: string;
     address?: string;
+    magic_link?: string;
     payment_url?: string;
+    paymentUrl?: string;
     amount?: string;
     status?: string;
   } | null>(null);
@@ -233,6 +248,13 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
     game_name: "",
   });
   const [pixPayPending, setPixPayPending] = useState(false);
+  const [tierlockForm, setTierlockForm] = useState({
+    amount: "",
+    gameUsername: "",
+    game_id: "",
+    game_name: "",
+  });
+  const [tierlockPending, setTierlockPending] = useState(false);
 
   const games = useMemo(() => {
     const rows = gamesData?.data ?? gamesData?.rows ?? gamesData?.games ?? [];
@@ -244,6 +266,21 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
   }, [gamesData]);
 
   const { data: balanceResponse } = useWalletBalance(adminMode ? undefined : id as string | undefined);
+  const { data: paymentProfileResponse } = usePaymentProfile();
+  const orderStatus = useMemo(() => {
+    if (query.status === "pending") return "Pending Payment";
+    if (query.status === "completed" || query.status === "confirmed") return "Payment Approved";
+    if (query.status === "failed") return "Failed";
+    return undefined;
+  }, [query.status]);
+  const {
+    data: paymentOrdersResponse,
+    isLoading: paymentOrdersLoading,
+    isFetching: paymentOrdersFetching,
+  } = usePaymentOrders(
+    { page: query.page, limit: query.limit, status: orderStatus },
+    adminMode,
+  );
   const { data: userTxData, isLoading: userTxLoading, isFetching: userTxFetching } = useWalletTransactionsByUser(
     adminMode ? undefined : id as string | undefined,
     {
@@ -258,15 +295,25 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
     adminMode,
   );
   const data = adminMode ? allTxData : userTxData;
-  const isLoading = adminMode ? allTxLoading : userTxLoading;
-  const isFetching = adminMode ? allTxFetching : userTxFetching;
+  const isLoading = (adminMode ? allTxLoading : userTxLoading) || paymentOrdersLoading;
+  const isFetching = (adminMode ? allTxFetching : userTxFetching) || paymentOrdersFetching;
 
   const rowsRaw: DepositRow[] = useMemo(() => {
-    const items = (data as any)?.data?.items ?? [];
-    if (!Array.isArray(items)) return [];
+    const walletItems = (data as any)?.data?.items ?? [];
+    const orderItems = (paymentOrdersResponse as any)?.data?.items ?? [];
+    const normalizedWalletItems = Array.isArray(walletItems) ? walletItems : [];
+    const normalizedOrderItems = Array.isArray(orderItems) ? orderItems : [];
+    const creditedOrderIds = new Set(
+      normalizedWalletItems
+        .map((row: any) => row.reference_id ?? row.referenceId ?? row.meta?.order_id)
+        .filter(Boolean)
+        .map(String),
+    );
 
-    return items.map((row: any) => ({
+    const walletRows = normalizedWalletItems.map((row: any) => ({
       id: row.id,
+      source: "wallet" as const,
+      provider: row.provider ?? row.meta?.provider ?? null,
       amount: String(row.amount ?? "0"),
       currency: row.currency ?? "USD",
       status: String(row.status ?? row.api_status ?? "pending"),
@@ -275,16 +322,33 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       game_id: row.game_id ?? row.game?.id ?? null,
       game_name: row.game_name ?? row.game?.name ?? null,
       address: row.address ?? row.meta?.address ?? null,
-      payment_url:
-        row.payment_url ??
-        row.paymentUrl ??
-        row.magic_link ??
-        row.magicLink ??
-        row.meta?.paymentUrl ??
-        row.meta?.magicLink ??
-        null,
+      payment_url: row.magic_link ?? row.magicLink ?? row.meta?.magicLink ?? row.meta?.paymentUrl ?? null,
     }));
-  }, [data]);
+
+    const orderRows = normalizedOrderItems
+      .filter((row: any) => {
+        const status = String(row.status ?? "");
+        return status !== "Payment Approved" || !creditedOrderIds.has(String(row.id));
+      })
+      .map((row: any) => ({
+        id: row.id,
+        source: "order" as const,
+        provider: row.payment_provider ?? null,
+        amount: String(row.amount ?? row.total_amount ?? row.credits ?? "0"),
+        currency: "USD",
+        status: String(row.status ?? "Pending Payment"),
+        api_status: row.payment_method ?? row.payment_provider ?? "order",
+        createdAt: row.createdAt ?? row.created_at ?? new Date().toISOString(),
+        game_id: row.game_id ?? null,
+        game_name: row.game ?? null,
+        address: null,
+        payment_url: row.payment_url ?? null,
+      }));
+
+    return [...orderRows, ...walletRows].sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [data, paymentOrdersResponse]);
 
   const rows = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
@@ -292,6 +356,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
     return rowsRaw.filter((row) => {
       if (filters.game_id && String(row.game_id ?? "") !== String(filters.game_id)) return false;
       if (!isWithinDate(row.createdAt, filters.date)) return false;
+      if (!matchesStatusFilter(row.status, filters.status)) return false;
 
       if (!q) return true;
 
@@ -299,6 +364,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
         row.amount,
         row.status,
         row.api_status,
+        row.provider,
         row.address,
         row.payment_url,
         row.game_name,
@@ -330,10 +396,12 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
   }, [rows]);
 
   const balance = (balanceResponse as any)?.data ?? null;
+  const paymentProfile = (paymentProfileResponse as any)?.data ?? null;
+  const tierlockEnabled = paymentProfile?.tierlock_enabled !== false;
   const page = query.page;
   const limit = query.limit;
-  const totalCount = Number((data as any)?.data?.totalCount ?? 0);
-  const totalPages = Number((data as any)?.data?.totalPages ?? 1);
+  const totalCount = rowsRaw.length;
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
   const isFirst = page <= 1;
   const isLast = page >= totalPages;
 
@@ -347,7 +415,10 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
     setQuery((prev) => ({
       ...prev,
       page: 1,
-      status: filters.status === "all" ? undefined : filters.status,
+      status:
+        filters.status === "all" || filters.status === "created"
+          ? undefined
+          : filters.status,
     }));
   };
 
@@ -370,14 +441,11 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       return;
     }
 
-    const isTierlock = activeDepositTab === "tierlock";
-
     try {
       const response = await walletActions.createDeposit({
         userId: String(id),
         amount,
-        type: isTierlock ? "tierlock" : form.type,
-        paymentChannel: isTierlock ? "tierlock" : undefined,
+        type: form.type,
         memo: form.memo || undefined,
         gameId: form.game_id || undefined,
         gameName: form.game_name || undefined,
@@ -387,16 +455,9 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       setLatestDeposit(result);
       setOpen(false);
       setForm({ amount: "", type: "lightning", memo: "", game_id: "", game_name: "" });
-      const paymentUrl = result?.payment_url ?? result?.paymentUrl;
-      toast.success(
-        paymentUrl ? "Tierlock checkout created." : "Deposit address created.",
-      );
+      toast.success("Deposit address created.");
       queryClient.invalidateQueries({ queryKey: ["wallet-balance", id] });
       queryClient.invalidateQueries({ queryKey: ["wallet-transactions-user", id] });
-
-      if (paymentUrl && typeof window !== "undefined") {
-        window.location.href = paymentUrl;
-      }
     } catch (error: any) {
       toast.error(
         error?.response?.data?.error?.message ||
@@ -427,12 +488,14 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
     }
 
     const paymentWindow =
-      typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+      typeof window !== "undefined"
+        ? window.open("about:blank", "_blank", "noopener,noreferrer")
+        : null;
 
     setPixPayPending(true);
 
     try {
-      const response = await api.post("/orders/pix-pay", {
+      const response = await depositActions.createPixPayOrder({
         amount,
         method: pixPayForm.method,
         gameUsername: pixPayForm.gameUsername.trim(),
@@ -463,6 +526,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
         game_id: "",
         game_name: "",
       });
+      queryClient.invalidateQueries({ queryKey: ["payment-orders"] });
       toast.success("PixPay order created. Complete payment in the new tab.");
     } catch (error: any) {
       if (paymentWindow && !paymentWindow.closed) {
@@ -477,6 +541,85 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       );
     } finally {
       setPixPayPending(false);
+    }
+  };
+
+  const submitTierlock = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!id) {
+      toast.error("User not found.");
+      return;
+    }
+
+    if (!tierlockEnabled) {
+      toast.error("Tierlock deposits are currently disabled.");
+      return;
+    }
+
+    const amount = Number(tierlockForm.amount);
+    if (!Number.isFinite(amount) || amount < 1) {
+      toast.error("Enter a valid amount.");
+      return;
+    }
+
+    if (!tierlockForm.gameUsername.trim()) {
+      toast.error("Game username is required.");
+      return;
+    }
+
+    const paymentWindow =
+      typeof window !== "undefined"
+        ? window.open("about:blank", "_blank", "noopener,noreferrer")
+        : null;
+
+    setTierlockPending(true);
+
+    try {
+      const response = await depositActions.createTierlockOrder({
+        amount,
+        gameUsername: tierlockForm.gameUsername.trim(),
+        gameName: tierlockForm.game_name || undefined,
+      });
+
+      const paymentUrl =
+        response?.data?.paymentUrl ??
+        response?.data?.data?.paymentUrl ??
+        response?.data?.data?.order?.payment_url ??
+        "";
+
+      if (paymentWindow) {
+        if (paymentUrl) {
+          paymentWindow.location.href = paymentUrl;
+        } else {
+          paymentWindow.close();
+        }
+      } else if (paymentUrl) {
+        window.open(paymentUrl, "_blank");
+      }
+
+      setOpen(false);
+      setTierlockForm({
+        amount: "",
+        gameUsername: "",
+        game_id: "",
+        game_name: "",
+      });
+      queryClient.invalidateQueries({ queryKey: ["payment-orders"] });
+      toast.success("Tierlock order saved. Complete payment in the new tab.");
+    } catch (error: any) {
+      if (paymentWindow && !paymentWindow.closed) {
+        paymentWindow.close();
+      }
+
+      toast.error(
+        error?.response?.data?.error?.message ||
+          error?.response?.data?.message ||
+          error?.message ||
+          "Tierlock request failed.",
+      );
+    } finally {
+      setTierlockPending(false);
     }
   };
 
@@ -506,7 +649,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
 
           <Button className="rounded-2xl" onClick={() => setOpen(true)}>
             <Plus className="mr-2 size-4" />
-            Complete Deposit
+            Create Deposit
           </Button>
         </div>
       </div>
@@ -560,9 +703,9 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
         <div className="gradient-card-soft p-4 space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-slate-900 dark:text-white">Latest Deposit</div>
+              <div className="text-sm font-semibold text-slate-900 dark:text-white">Latest Deposit Address</div>
               <div className="text-xs text-slate-600 dark:text-white/60">
-                Use the generated address or payment link. Status will update automatically when webhooks are received.
+                Use the generated address or magic link. Status will update automatically when webhooks are received.
               </div>
             </div>
             <Badge variant={statusVariant(latestDeposit.status)}>{latestDeposit.status ?? "PENDING"}</Badge>
@@ -585,10 +728,10 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
               </div>
             </div>
             <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 p-3 lg:col-span-3">
-              <div className="text-[11px] text-slate-600 dark:text-white/60">Deposit Link</div>
-              {latestDeposit.payment_url ? (
+              <div className="text-[11px] text-slate-600 dark:text-white/60">Magic Link</div>
+              {latestDeposit.payment_url || latestDeposit.paymentUrl || latestDeposit.magic_link ? (
                 <a
-                  href={latestDeposit.payment_url}
+                  href={latestDeposit.payment_url ?? latestDeposit.paymentUrl ?? latestDeposit.magic_link}
                   target="_blank"
                   rel="noreferrer"
                   className="mt-2 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
@@ -666,7 +809,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
                 <Input
                   value={filters.search}
                   onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
-                  placeholder="Checkout link, amount, game..."
+                  placeholder="Address, magic link, amount..."
                   className="h-10 rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 pl-10 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
                 />
               </div>
@@ -761,8 +904,8 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
           },
           {
             key: "api_status",
-            title: "API Status",
-            render: (row) => row.api_status ?? "-",
+            title: "Provider",
+            render: (row) => row.provider ?? row.api_status ?? "-",
           },
           {
             key: "address",
@@ -781,7 +924,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
           },
           {
             key: "payment_url",
-            title: "Deposit Link",
+            title: "Magic Link",
             render: (row) =>
               row.payment_url ? (
                 <a
@@ -810,7 +953,7 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="gradient-card-soft text-slate-900">
           <DialogHeader>
-            <DialogTitle>Create Deposit Address</DialogTitle>
+            <DialogTitle>Create Deposit</DialogTitle>
             <DialogDescription className="text-slate-600 dark:text-white/60">
               Choose a deposit method, then complete the flow for that payment option.
             </DialogDescription>
@@ -827,11 +970,11 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
               <TabsTrigger value="pointsmate" className="rounded-xl">
                 PointsMate
               </TabsTrigger>
-              <TabsTrigger value="pixpay" className="rounded-xl">
-                PixPay
-              </TabsTrigger>
               <TabsTrigger value="tierlock" className="rounded-xl">
                 Tierlock
+              </TabsTrigger>
+              <TabsTrigger value="pixpay" className="rounded-xl">
+                PixPay
               </TabsTrigger>
             </TabsList>
 
@@ -928,6 +1071,87 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
                     disabled={walletActions.isPending}
                   >
                     {walletActions.isPending ? "Creating..." : "Create"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </TabsContent>
+
+            <TabsContent value="tierlock">
+              <form onSubmit={submitTierlock} className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Amount
+                  </Label>
+                  <Input
+                    value={tierlockForm.amount}
+                    disabled={tierlockPending}
+                    onChange={(e) =>
+                      setTierlockForm((prev) => ({
+                        ...prev,
+                        amount: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter amount"
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Game Username
+                  </Label>
+                  <Input
+                    value={tierlockForm.gameUsername}
+                    disabled={tierlockPending}
+                    onChange={(e) =>
+                      setTierlockForm((prev) => ({
+                        ...prev,
+                        gameUsername: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter your in-game username"
+                    className="rounded-2xl border-slate-200 dark:border-white/10 bg-white dark:bg-white/5 text-slate-900 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/30"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-white/80">
+                    Game
+                  </Label>
+                  <GamesSelect
+                    value={tierlockForm.game_id}
+                    disabled={tierlockPending}
+                    onChange={(game: GameOption | null) =>
+                      setTierlockForm((prev) => ({
+                        ...prev,
+                        game_id: game?.id ?? "",
+                        game_name: game?.name ?? "",
+                      }))
+                    }
+                  />
+                </div>
+
+                <p className="text-xs text-slate-600 dark:text-white/60">
+                  This opens Tierlock in a new tab. Credits are applied automatically after Tierlock confirms payment.
+                </p>
+
+                <DialogFooter className="gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="rounded-2xl"
+                    onClick={() => setOpen(false)}
+                    disabled={tierlockPending}
+                  >
+                    Cancel
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    className="rounded-2xl"
+                    disabled={tierlockPending}
+                  >
+                    {tierlockPending ? "Creating..." : "Pay with Tierlock"}
                   </Button>
                 </DialogFooter>
               </form>
@@ -1040,54 +1264,6 @@ export default function DepositLayout({ userId: userIdProp, adminMode = false }:
                   </Button>
                 </DialogFooter>
               </form>
-            </TabsContent>
-
-            <TabsContent value="tierlock">
-              <div className="space-y-4">
-                <p className="text-sm text-slate-700 dark:text-white/80">
-                  Use Tierlock&apos;s hosted checkout directly.
-                </p>
-
-                <a
-                  href={TIERLOCK_BUY_NOW_URL}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    display: "inline-block",
-                    backgroundColor: "#0070f3",
-                    color: "#ffffff",
-                    padding: "12px 20px",
-                    textDecoration: "none",
-                    borderRadius: "4px",
-                    fontFamily: "sans-serif",
-                    fontWeight: 500,
-                    textAlign: "center",
-                  }}
-                >
-                  Buy Now
-                </a>
-
-                <div className="rounded-xl border border-slate-200 bg-white/70 p-3 text-xs text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-white/70">
-                  {TIERLOCK_BUY_NOW_URL}
-                </div>
-
-                <p className="text-xs text-slate-600 dark:text-white/60">
-                  This button opens the Tierlock checkout page directly. Your
-                  balance updates after the Tierlock payment webhook confirms
-                  success.
-                </p>
-
-                <DialogFooter className="gap-2">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    className="rounded-2xl"
-                    onClick={() => setOpen(false)}
-                  >
-                    Cancel
-                  </Button>
-                </DialogFooter>
-              </div>
             </TabsContent>
           </Tabs>
         </DialogContent>

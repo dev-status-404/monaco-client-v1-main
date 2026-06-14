@@ -9,17 +9,42 @@ export const useWithdrawls = (params: any) => {
   });
 };
 
+export const usePayoutRequests = (params: any = {}, adminMode = false) => {
+  return useQuery({
+    queryKey: ["payout-requests", adminMode, params],
+    queryFn: () => withdrawlsApi.getPayoutRequests(params, adminMode),
+    refetchInterval: (query) => {
+      const rows = (query.state.data as any)?.data?.items ?? [];
+      const hasOpen = Array.isArray(rows)
+        ? rows.some((row: any) =>
+            ["redeem requested", "under review", "approved"].includes(
+              String(row?.status ?? "").toLowerCase(),
+            ),
+          )
+        : false;
+
+      return hasOpen ? 5000 : false;
+    },
+  });
+};
+
 export const useWithdrawlActions = () => {
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
     mutationFn: withdrawlsApi.updateWithdrawls,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["withdrawls"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
+      queryClient.invalidateQueries({ queryKey: ["payout-requests"] });
+    },
   });
 
   const createMutation = useMutation({
     mutationFn: withdrawlsApi.createWithdrawls,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["withdrawls"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
+      queryClient.invalidateQueries({ queryKey: ["payout-requests"] });
+    },
   });
 
   const deleteMutation = useMutation({

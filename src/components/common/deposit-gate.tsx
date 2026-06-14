@@ -30,7 +30,7 @@ const PIX_PAY_METHODS: PixPayMethod[] = [
   "PayPal",
   "Visa / Debit",
 ];
-const TIERLOCK_BUY_NOW_URL = "https://app.tierlock.com/1EIs9BPI";
+const TIERLOCK_BUY_NOW_URL = "https://app.tierlock.com/dkYcMHTw";
 
 const MIN_DEPOSIT = 1;
 const MAX_DEPOSIT_HINT = 10;
@@ -206,7 +206,9 @@ export default function DepositGate({
     }
 
     const paymentWindow =
-      typeof window !== "undefined" ? window.open("about:blank", "_blank") : null;
+      typeof window !== "undefined"
+        ? window.open("about:blank", "_blank", "noopener,noreferrer")
+        : null;
 
     setPixPayPending(true);
 

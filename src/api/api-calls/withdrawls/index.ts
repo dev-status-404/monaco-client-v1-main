@@ -8,7 +8,34 @@ export const withdrawlsApi = {
     return response.data;
   },
 
+  getPayoutRequests: async (params: any = {}, adminMode = false) => {
+    const endpoint = adminMode
+      ? apiEndpoints.paymentSystem.adminPayoutRequests(params)
+      : apiEndpoints.paymentSystem.myPayoutRequests(params);
+    const response = await api.get(endpoint);
+    return response.data;
+  },
+
   createWithdrawls: async (data: any) => {
+    const method = String(data?.method ?? data?.payment_method ?? "").toLowerCase();
+    if (["tierlock", "pixpay"].includes(method)) {
+      const phone = String(data?.customerPhone ?? data?.customer_phone ?? data?.phone ?? "").trim();
+      const payoutAccount = String(data?.payoutAccount ?? data?.payout_account ?? data?.destination ?? data?.address ?? "").trim();
+      const gameName = String(data?.gameName ?? data?.game_name ?? "").trim();
+      const gameUsername = String(data?.gameUsername ?? data?.game_username ?? "").trim();
+
+      const response = await api.post(apiEndpoints.paymentSystem.createPayoutRequest, {
+        amount: data?.amount,
+        game: gameName,
+        game_username: gameUsername,
+        payout_method: method === "tierlock" ? "Tierlock" : "PixPay",
+        payout_account: payoutAccount,
+        customer_phone: phone || payoutAccount,
+        note: data?.memo ?? data?.note,
+      });
+      return response.data;
+    }
+
     const normalizedDestination = String(
       data?.address ?? data?.destination ?? "",
     ).trim();
@@ -35,6 +62,37 @@ export const withdrawlsApi = {
 
   updateWithdrawls: async (data: any) => {
     const nextStatus = String(data?.status ?? "").toLowerCase();
+    const isPayoutRequest =
+      data?.source === "payout" ||
+      ["Redeem Requested", "Under Review", "Approved", "Paid Out", "Rejected", "Failed", "Cancelled", "Expired"].includes(
+        String(data?.currentStatus ?? data?.current_status ?? data?.statusRaw ?? ""),
+      );
+
+    if (isPayoutRequest) {
+      const statusMap: Record<string, string> = {
+        requested: "Redeem Requested",
+        pending: "Redeem Requested",
+        processing: "Under Review",
+        approved: "Approved",
+        paid: "Paid Out",
+        completed: "Paid Out",
+        confirmed: "Paid Out",
+        rejected: "Rejected",
+        failed: "Failed",
+        cancelled: "Cancelled",
+        canceled: "Cancelled",
+        expired: "Expired",
+      };
+      const response = await api.patch(
+        apiEndpoints.paymentSystem.updatePayoutStatus(data?.id),
+        {
+          status: statusMap[nextStatus] ?? data?.status,
+          admin_notes: data?.adminNote ?? data?.admin_note,
+        },
+      );
+      return response.data;
+    }
+
     const normalizedDestination = String(
       data?.destination ?? data?.address ?? "",
     ).trim();

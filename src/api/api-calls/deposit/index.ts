@@ -20,6 +20,17 @@ export const depositApi = {
     const response = await api.get(apiEndpoints.deposits.getAll(params));
     return response.data;
   },
+  getPaymentProfile: async () => {
+    const response = await api.get(apiEndpoints.paymentSystem.myProfile);
+    return response.data;
+  },
+  getPaymentOrders: async (params: any = {}, adminMode = false) => {
+    const endpoint = adminMode
+      ? apiEndpoints.paymentSystem.adminOrders(params)
+      : apiEndpoints.paymentSystem.myOrders(params);
+    const response = await api.get(endpoint);
+    return response.data;
+  },
   createDeposit: async (data: any) => {
     const provider = String(data?.provider ?? "").toLowerCase();
     const response = await api.post(apiEndpoints.wallet.deposit, {
@@ -29,6 +40,23 @@ export const depositApi = {
       memo: data?.memo,
       referenceId: data?.referenceId,
       gameId: data?.gameId ?? data?.game_id,
+      gameName: data?.gameName ?? data?.game_name,
+    });
+    return response.data;
+  },
+  createPixPayOrder: async (data: any) => {
+    const response = await api.post(apiEndpoints.paymentSystem.createPixPayOrder, {
+      amount: data?.amount,
+      method: data?.method,
+      gameUsername: data?.gameUsername ?? data?.game_username,
+      gameName: data?.gameName ?? data?.game_name,
+    });
+    return response.data;
+  },
+  createTierlockOrder: async (data: any) => {
+    const response = await api.post(apiEndpoints.paymentSystem.createTierlockOrder, {
+      amount: data?.amount,
+      gameUsername: data?.gameUsername ?? data?.game_username,
       gameName: data?.gameName ?? data?.game_name,
     });
     return response.data;

@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dialog";
 
 import { useUserInfo } from "@/helpers/use-user";
-import { useWithdrawlActions, useWithdrawls } from "@/hooks/withdrawls";
+import { usePayoutRequests, useWithdrawlActions, useWithdrawls } from "@/hooks/withdrawls";
 import { useQueryClient } from "@tanstack/react-query";
 import GamesSelect, { type GameOption } from "@/features/platforms/ui/select";
 
@@ -43,10 +43,13 @@ type PaymentMethod = "pointsmate" | "tierlock" | "pixpay";
 
 type RedeemRow = {
   id: string;
+  source?: "withdrawal" | "payout";
   amount: string;
   currency?: string;
   method?: string;
   destination?: string;
+  customer_phone?: string | null;
+  game_username?: string | null;
 
   status: string;
   admin_note?: string | null;
@@ -85,9 +88,9 @@ const clamp = (n: number, min: number, max: number) =>
 
 function statusVariant(status?: string) {
   const s = String(status ?? "").toLowerCase();
-  if (["paid", "approved", "completed", "confirmed", "granted"].includes(s))
+  if (["paid", "paid out", "approved", "completed", "confirmed", "granted"].includes(s))
     return "success";
-  if (["requested", "pending", "processing"].includes(s)) return "primary";
+  if (["requested", "redeem requested", "pending", "processing", "under review"].includes(s)) return "primary";
   return "destructive";
 }
 
@@ -168,11 +171,26 @@ function CopyButton({ text }: { text: string }) {
 
 function isSuccessStatus(s?: string) {
   const x = String(s ?? "").toLowerCase();
-  return ["paid", "approved", "completed", "confirmed", "granted"].includes(x);
+  return ["paid", "paid out", "approved", "completed", "confirmed", "granted"].includes(x);
 }
 function isPendingStatus(s?: string) {
   const x = String(s ?? "").toLowerCase();
-  return ["requested", "pending", "processing"].includes(x);
+  return ["requested", "redeem requested", "pending", "processing", "under review"].includes(x);
+}
+
+function matchesRedeemStatus(rowStatus: string, filterStatus: RedeemStatus) {
+  if (filterStatus === "all") return true;
+  const normalized = rowStatus.toLowerCase();
+  if (filterStatus === "requested") {
+    return normalized === "requested" || normalized === "redeem requested";
+  }
+  if (filterStatus === "processing") {
+    return normalized === "processing" || normalized === "under review";
+  }
+  if (filterStatus === "paid" || filterStatus === "completed" || filterStatus === "confirmed") {
+    return normalized === filterStatus || normalized === "paid out";
+  }
+  return normalized === filterStatus;
 }
 
 export default function RedeemsLayout() {
@@ -222,6 +240,26 @@ export default function RedeemsLayout() {
   }, [id, isAdmin]);
 
   const { data, isLoading } = useWithdrawls(query);
+  const {
+    data: payoutRequestsData,
+    isLoading: payoutRequestsLoading,
+  } = usePayoutRequests(
+    {
+      page: query.page,
+      limit: query.limit,
+      status:
+        query.status === "requested" || query.status === "pending"
+          ? "Redeem Requested"
+          : query.status === "processing"
+            ? "Under Review"
+            : query.status === "paid" || query.status === "completed" || query.status === "confirmed"
+              ? "Paid Out"
+              : query.status
+                ? query.status.charAt(0).toUpperCase() + query.status.slice(1)
+                : undefined,
+    },
+    isAdmin,
+  );
 
   // ---- Withdraw actions (create) ----
   const withdrawlActions = useWithdrawlActions();
@@ -242,12 +280,16 @@ export default function RedeemsLayout() {
     destination: string;
     game_id: string;
     game_name?: string;
+    game_username: string;
+    customer_phone: string;
   }>({
     payment_method: "pointsmate",
     amount: "",
     destination: "",
     game_id: "",
     game_name: "",
+    game_username: "",
+    customer_phone: "",
   });
 
   const submitRequest = (e: React.FormEvent) => {
@@ -257,15 +299,28 @@ export default function RedeemsLayout() {
 
     const amt = Number(requestForm.amount);
     if (!Number.isFinite(amt) || amt <= 0) return alert("Enter a valid amount");
-    if (!requestForm.destination.trim()) return alert("Enter wallet address");
+    const payoutDestination =
+      requestForm.destination.trim() ||
+      (requestForm.payment_method === "tierlock"
+        ? requestForm.customer_phone.trim()
+        : "");
+    if (!payoutDestination) return alert("Enter payout details");
     if (!requestForm.game_id) return alert("Select platform");
+    if (!requestForm.game_username.trim()) return alert("Enter game username");
+    if (["tierlock", "pixpay"].includes(requestForm.payment_method)) {
+      const digits = requestForm.customer_phone.replace(/[^\d]/g, "");
+      if (digits.length < 8) return alert("Enter a valid phone number with country code");
+    }
 
     createWithdrawl(
       {
         user_id: query.user_id!,
         method: requestForm.payment_method,
         amount: requestForm.amount,
-        destination: requestForm.destination.trim(),
+        destination: payoutDestination,
+        payoutAccount: payoutDestination,
+        customerPhone: requestForm.customer_phone || payoutDestination,
+        gameUsername: requestForm.game_username.trim(),
         game_id: requestForm.game_id,
         game_name: requestForm.game_name,
       },
@@ -273,6 +328,7 @@ export default function RedeemsLayout() {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
           queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
+          queryClient.invalidateQueries({ queryKey: ["payout-requests"] });
 
           setOpen(false);
           setRequestForm({
@@ -281,6 +337,8 @@ export default function RedeemsLayout() {
             destination: "",
             game_id: "",
             game_name: "",
+            game_username: "",
+            customer_phone: "",
           });
         },
         onError: (err: any) => {
@@ -312,6 +370,8 @@ export default function RedeemsLayout() {
 
       await withdrawlActions.updateWithdrawl({
         id: row.id,
+        source: row.source,
+        currentStatus: row.status,
         status: "approved",
         reviewed_by_admin_id: id,
         admin_note: row.admin_note || "Approved by admin",
@@ -322,6 +382,7 @@ export default function RedeemsLayout() {
 
       queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
       queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["payout-requests"] });
       alert(
         String(row.method || "").toLowerCase() === "tierlock"
           ? "Payout link sent. Waiting for customer approval."
@@ -350,6 +411,8 @@ export default function RedeemsLayout() {
     try {
       await withdrawlActions.updateWithdrawl({
         id: row.id,
+        source: row.source,
+        currentStatus: row.status,
         status: "rejected",
         reviewed_by_admin_id: id,
         admin_note: "Rejected by admin",
@@ -357,6 +420,7 @@ export default function RedeemsLayout() {
 
       queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
       queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
+      queryClient.invalidateQueries({ queryKey: ["payout-requests"] });
       alert("Withdrawal request has been denied.");
     } catch (err: any) {
       alert(
@@ -378,8 +442,9 @@ export default function RedeemsLayout() {
       (Array.isArray((data as any)?.data) && (data as any).data) ||
       [];
 
-    return arr.map((w: any) => ({
+    const withdrawalRows = arr.map((w: any) => ({
       id: w.id ?? w._id,
+      source: "withdrawal" as const,
       amount: String(w.amount ?? "0"),
       currency: w.currency ?? "USD",
       method: w.method ?? w.payment_method ?? "-",
@@ -400,7 +465,32 @@ export default function RedeemsLayout() {
       reviewed_by_admin_id: w.reviewed_by_admin_id ?? null,
       reviewedByAdmin: w.reviewedByAdmin ?? null,
     }));
-  }, [data]);
+
+    const payoutArr = (payoutRequestsData as any)?.data?.items ?? [];
+    const payoutRows: RedeemRow[] = Array.isArray(payoutArr)
+      ? payoutArr.map((p: any) => ({
+          id: p.id,
+          source: "payout" as const,
+          amount: String(p.amount ?? "0"),
+          currency: "USD",
+          method: p.payout_method ?? "-",
+          destination: p.payout_account ?? "",
+          customer_phone: p.customer_phone ?? null,
+          game_username: p.game_username ?? null,
+          status: String(p.status ?? "Redeem Requested"),
+          admin_note: p.admin_notes ?? p.admin_note ?? null,
+          createdAt: p.createdAt ?? p.created_at ?? new Date().toISOString(),
+          updatedAt: p.updatedAt ?? p.updated_at,
+          game_id: p.game_id ?? undefined,
+          game_name: p.game ?? "-",
+          user: p.user,
+          reviewed_by_admin_id: null,
+          reviewedByAdmin: null,
+        }))
+      : [];
+
+    return [...payoutRows, ...withdrawalRows];
+  }, [data, payoutRequestsData]);
 
   // ✅ Apply ALL filters client-side using appliedFilters (so UI changes don't affect table until Apply)
   const filteredRows: RedeemRow[] = useMemo(() => {
@@ -429,8 +519,7 @@ export default function RedeemsLayout() {
       .filter((r) => {
       // status
       if (appliedFilters.status !== "all") {
-        const s = String(r.status ?? "").toLowerCase();
-        if (s !== String(appliedFilters.status).toLowerCase()) return false;
+        if (!matchesRedeemStatus(String(r.status ?? ""), appliedFilters.status)) return false;
       }
 
       // method
@@ -516,16 +605,13 @@ export default function RedeemsLayout() {
   }, [filteredRows]);
 
   // pagination from backend
-  const totalCount = Number(
+  const backendTotalCount = Number(
     (data as any)?.pagination?.totalCount ??
       (data as any)?.data?.pagination?.totalCount ??
       0,
   );
-  const totalPages = Number(
-    (data as any)?.pagination?.totalPages ??
-      (data as any)?.data?.pagination?.totalPages ??
-      1,
-  );
+  const totalCount = Math.max(backendTotalCount, rowsRaw.length);
+  const totalPages = Math.max(1, Math.ceil(totalCount / query.limit));
 
   const page = query.page;
   const limit = query.limit;
@@ -597,7 +683,7 @@ export default function RedeemsLayout() {
     (appliedFilters.search ? 1 : 0) +
     (appliedFilters.game_id ? 1 : 0);
 
-  if (isLoading) {
+  if (isLoading || payoutRequestsLoading) {
     return (
       <div className="p-10 text-white flex items-center justify-center h-full">
         <Spinner className="size-12" />
@@ -618,6 +704,7 @@ export default function RedeemsLayout() {
             onClick={() => {
               queryClient.invalidateQueries({ queryKey: ["withdrawls"] });
               queryClient.invalidateQueries({ queryKey: ["withdrawals"] });
+              queryClient.invalidateQueries({ queryKey: ["payout-requests"] });
             }}
             title="Refresh"
           >
@@ -1014,6 +1101,7 @@ export default function RedeemsLayout() {
                     ...p,
                     payment_method: value as PaymentMethod,
                     destination: "",
+                    customer_phone: "",
                   }))
                 }
                 className="space-y-4"
@@ -1050,7 +1138,7 @@ export default function RedeemsLayout() {
                 </TabsContent>
 
                 <TabsContent value="tierlock" className="space-y-2">
-                  <Label>Phone Number</Label>
+                  <Label>Payout Account</Label>
                   <Input
                     value={requestForm.destination}
                     disabled={isSubmitting}
@@ -1061,7 +1149,21 @@ export default function RedeemsLayout() {
                         destination: e.target.value,
                       }))
                     }
-                    placeholder="Enter payout phone number"
+                    placeholder="Enter customer name or payout account"
+                  />
+
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={requestForm.customer_phone}
+                    disabled={isSubmitting}
+                    className="text-white placeholder:text-white/60"
+                    onChange={(e) =>
+                      setRequestForm((p) => ({
+                        ...p,
+                        customer_phone: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter payout phone number with country code"
                   />
                   <p className="text-xs text-muted-foreground">
                     Tierlock sends the customer a payout approval link by SMS,
@@ -1083,11 +1185,40 @@ export default function RedeemsLayout() {
                     }
                     placeholder="Enter Cash App, Venmo, PayPal, or other PixPay payout details"
                   />
+                  <Label>Phone Number</Label>
+                  <Input
+                    value={requestForm.customer_phone}
+                    disabled={isSubmitting}
+                    className="text-white placeholder:text-white/60"
+                    onChange={(e) =>
+                      setRequestForm((p) => ({
+                        ...p,
+                        customer_phone: e.target.value,
+                      }))
+                    }
+                    placeholder="Enter payout phone number with country code"
+                  />
                   <p className="text-xs text-muted-foreground">
                     PixPay redeems are handled manually by admin approval.
                   </p>
                 </TabsContent>
               </Tabs>
+
+              <div className="space-y-2">
+                <Label>Game Username</Label>
+                <Input
+                  value={requestForm.game_username}
+                  disabled={isSubmitting}
+                  className="text-white placeholder:text-white/60"
+                  onChange={(e) =>
+                    setRequestForm((p) => ({
+                      ...p,
+                      game_username: e.target.value,
+                    }))
+                  }
+                  placeholder="Enter your in-game username"
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label>Select Platform</Label>

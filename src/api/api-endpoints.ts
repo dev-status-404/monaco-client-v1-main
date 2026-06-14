@@ -87,6 +87,20 @@ export const apiEndpoints = {
       `/wallet/transaction/${userId}/${txId}`,
   },
 
+  paymentSystem: {
+    createPixPayOrder: "/orders/pix-pay",
+    createTierlockOrder: "/orders/tierlock",
+    myOrders: (params: any) => withPagination("/me/orders", params),
+    adminOrders: (params: any) => withPagination("/admin/orders", params),
+    myProfile: "/me/profile",
+    createPayoutRequest: "/payout-requests",
+    myPayoutRequests: (params: any) => withPagination("/me/payout-requests", params),
+    adminPayoutRequests: (params: any) =>
+      withPagination("/admin/payout-requests", params),
+    updatePayoutStatus: (id: string | number) =>
+      `/admin/payout-requests/${id}/status`,
+  },
+
   withdrawal: {
     getAll: (params: any) => withPagination("/withdrawal-requests/get", params),
     create: "/withdrawal-requests/create",
